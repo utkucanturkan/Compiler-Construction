@@ -1,0 +1,3 @@
+C:/Users/utkucanturkan/Desktop/oberon0c/build/CMakeFiles/oberon0c.dir
+C:/Users/utkucanturkan/Desktop/oberon0c/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/utkucanturkan/Desktop/oberon0c/build/CMakeFiles/ZERO_CHECK.dir

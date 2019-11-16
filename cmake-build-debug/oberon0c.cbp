@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="oberon0c"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="oberon0c">
+				<Option output="/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/oberon0c" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/grossniklaus/Desktop/oberon0c/scanner"/>
+					<Add directory="/Users/grossniklaus/Desktop/oberon0c/util"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 oberon0c"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="oberon0c/fast">
+				<Option output="/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/oberon0c" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/grossniklaus/Desktop/oberon0c/scanner"/>
+					<Add directory="/Users/grossniklaus/Desktop/oberon0c/util"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 oberon0c/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/grossniklaus/Desktop/oberon0c/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/main.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/parser/Parser.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/parser/Parser.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/parser/ast/Node.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/IdentToken.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/IdentToken.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/NumberToken.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/NumberToken.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/Scanner.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/Scanner.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/StringToken.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/StringToken.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/Token.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/scanner/Token.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/util/Logger.cpp">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/util/Logger.h">
+			<Option target="oberon0c"/>
+		</Unit>
+		<Unit filename="/Users/grossniklaus/Desktop/oberon0c/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
