@@ -1,14 +1,2 @@
-﻿  Building Custom Rule C:/Users/utkucanturkan/Desktop/oberon0c/CMakeLists.txt
-  IdentToken.cpp
-  Node.cpp
-  NumberToken.cpp
-  Scanner.cpp
-  StringToken.cpp
-  Token.cpp
-  Logger.cpp
-  main.cpp
-  Parser.cpp
-  Generating Code...
-Node.cpp(1,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-Parser.obj : error LNK2019: unresolved external symbol "private: class Node const * __cdecl Parser::module(void)" (?module@Parser@@AEAAPEBVNode@@XZ) referenced in function "public: class std::unique_ptr<class Node const ,struct std::default_delete<class Node const > > const __cdecl Parser::parse(void)" (?parse@Parser@@QEAA?BV?$unique_ptr@$$CBVNode@@U?$default_delete@$$CBVNode@@@std@@@std@@XZ)
-C:\Users\utkucanturkan\Desktop\oberon0c\build\Debug\oberon0c.exe : fatal error LNK1120: 1 unresolved externals
+﻿  Parser.cpp
+  oberon0c.vcxproj -> C:\Users\utkucanturkan\Desktop\oberon0c\build\Debug\oberon0c.exe
