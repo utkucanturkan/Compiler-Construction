@@ -353,11 +353,28 @@ const Node* Parser::procedure_heading() {
 
 const Node* Parser::procedure_body() {
 	/*
-	declarations 
-	["BEGIN" StatementSequence] -> optional 
+	declarations
+	["BEGIN" StatementSequence] -> optional
 	"END" ident
 	*/
 	declarations();
+	Token token = *scanner_->nextToken();
+	if (token.getType() == TokenType::kw_begin)
+	{
+		statement_sequence();
+		token = *scanner_->nextToken();
+	}
+	if (token.getType() == TokenType::kw_end)
+	{
+		token = *scanner_->nextToken();
+		if (token.getType() != TokenType::const_ident)
+		{
+			// SYNTAX ERROR
+		}
+	}
+	else {
+		// SYNTAX ERROR
+	}
 
 	return nullptr;
 }
@@ -671,6 +688,202 @@ const Node* Parser::ident_list() {
 }
 
 const Node* Parser::statement_sequence() {
+	/*
+	statement
+	{";" statement} -> Repetation
+	*/
+	statement();
+	bool shouldRepeat = true;
+	while (shouldRepeat)
+	{
+		Token token = *scanner_->nextToken();
+		if (token.getType() != TokenType::semicolon)
+		{
+			shouldRepeat = false;
+			// SYNTAX ERROR
+		}
+		else {
+			statement();
+		}
+
+	}
 	return nullptr;
 }
 
+const Node* Parser::statement() {
+	/*
+	[assignment | ProcedureCall | IfStatement | WhileStatement] -> Optional
+	*/
+	Token token = *scanner_->nextToken();
+	switch (token.getType())
+	{
+	case TokenType::kw_if:
+		if_statement();
+		break;
+	case TokenType::kw_while:
+		while_statement();
+		break;
+	case TokenType::const_ident:
+		assignment(); //procedure_call();
+		/*if (assignment() == nullptr)
+		{
+			procedure_call();
+		}*/
+		break;
+	default:
+		break;
+	}
+	return nullptr;
+}
+const Node* Parser::assignment() {
+	/*
+	ident selector ":=" expression
+	*/
+	Token token = *scanner_->peekToken();
+	if (token.getType() == TokenType::const_ident)
+	{
+		selector();
+		token = *scanner_->nextToken();
+		if (token.getType() != TokenType::op_becomes)
+		{
+			procedure_call();
+		}
+		else {
+			expression();
+		}
+	}
+	return nullptr;
+}
+
+const Node* Parser::procedure_call() {
+	/*
+	ident selector 
+	[ActualParameters] -> Optional
+	*/
+	Token token = *scanner_->nextToken();
+	if (token.getType() != TokenType::lparen)
+	{
+		actual_parameters();
+	}
+	else {
+		// SYNTAX ERROR
+	}
+	return nullptr;
+}
+
+const Node* Parser::actual_parameters() {
+	/*
+	"("
+	[expression
+	{ "," expression } -> Repetition
+	] -> Optional
+	")"
+	*/
+	Token token = *scanner_->peekToken();
+	if (token.getType() == TokenType::lparen)
+	{
+		if (expression() != nullptr)
+		{
+			bool shouldRepeat = true;
+			while (shouldRepeat)
+			{
+				token = *scanner_->nextToken();
+				if (token.getType() == TokenType::comma)
+				{
+					expression();
+				}
+				else {
+					shouldRepeat = false;
+				}
+			}
+		}
+	}
+	else {
+		// SYNTAX ERROR
+		// return nullptr;
+	}
+	if (token.getType() != TokenType::rparen)
+	{
+		// SYNTAX ERROR
+		// return nullptr;
+	}
+	return nullptr;
+}
+
+
+const Node* Parser::if_statement() {
+	/*
+	"IF" expression "THEN" StatementSequence
+	{"ELSIF" expression "THEN" StatementSequence} -> repetition
+	["ELSE" StatementSequence] -> Optional
+	"END" 
+	*/
+	Token token = *scanner_->peekToken();
+	if (token.getType() == TokenType::kw_if)
+	{
+		expression();
+		token = *scanner_->nextToken();
+		if (token.getType() == TokenType::kw_then)
+		{
+			statement_sequence();
+			bool shouldRepeat = true;
+			while (shouldRepeat)
+			{
+				token = *scanner_->nextToken();
+				if (token.getType() == TokenType::kw_elsif)
+				{
+					expression();
+					token = *scanner_->nextToken();
+					if (token.getType() == TokenType::kw_then)
+					{
+						statement_sequence();
+					}
+					else {
+						shouldRepeat = false;
+						// SYNTAX ERROR
+					}
+				}
+				else {
+					shouldRepeat = false;
+				}
+			}
+			if (token.getType() == TokenType::kw_else)
+			{
+				statement_sequence();
+				token = *scanner_->nextToken();
+			}
+			if (token.getType() != TokenType::kw_end) {
+				// SYNTAX ERROR
+			}
+		}
+		else {
+			// SYNTAX ERROR
+		}
+	}
+	return nullptr;
+}
+
+const Node* Parser::while_statement() {
+	/*
+	"WHILE" expression "DO" StatementSequence "END"
+	*/
+	Token token = *scanner_->peekToken();
+	if (token.getType() == TokenType::kw_while)
+	{
+		expression();
+		token = *scanner_->nextToken();
+		if (token.getType() == TokenType::kw_do)
+		{
+			statement_sequence();
+			token = *scanner_->nextToken();
+			if (token.getType() != TokenType::kw_end)
+			{
+				// SYNTAX ERROR
+			}
+		}
+		else {
+			// SYNTAX ERROR
+		}
+	}
+	return nullptr;
+}
