@@ -48,7 +48,7 @@ const Node* Parser::module()
 				nextTokenType = TokenType::const_ident;
 				break;
 			case TokenType::const_ident:
-				if (isEnd) {
+				if (isEnd) {					
 					if (false /*name != token.getValue()*/) {
 						// SYNTAX ERROR
 						shouldProceed = false;
@@ -63,12 +63,7 @@ const Node* Parser::module()
 				}
 				break;
 			case TokenType::semicolon:
-				token = *scanner_->nextToken();
 				declarations();
-				/*
-				------ WARNING!!!!!!!---
-				nextToken()
-				*/
 				token = *scanner_->nextToken();
 				if (token.getType() == TokenType::kw_begin)
 				{
@@ -116,7 +111,8 @@ const Node* Parser::declarations() {
 	["VAR" {IdentList ":" type ";"}]
 	{ProcedureDeclaration ";"}.
 	*/
-	switch (scanner_->peekToken()->getType())
+	Token token = *scanner_->nextToken();
+	switch (token.getType())
 	{
 	case TokenType::kw_const:
 		const_declarations();
@@ -149,7 +145,7 @@ const Node* Parser::const_declarations() {
 	bool shouldProceed = true;
 	bool shouldMoveNext = true;
 	Token token = *scanner_->peekToken();
-	TokenType nextToken = TokenType::const_ident;
+	TokenType nextToken = TokenType::kw_const;
 	while (shouldProceed)
 	{
 		if (shouldMoveNext)
@@ -160,8 +156,12 @@ const Node* Parser::const_declarations() {
 		{
 			switch (nextToken)
 			{
+			case TokenType::kw_const:
+				nextToken = TokenType::const_ident;
+				break;
 			case TokenType::const_ident:
 				nextToken = TokenType::op_eq;
+				shouldMoveNext = true;
 				break;
 			case TokenType::op_eq:
 				expression();
@@ -179,7 +179,6 @@ const Node* Parser::const_declarations() {
 				}
 				break;
 			default:
-				// SYNTAX ERROR
 				shouldProceed = false;
 				break;
 			}
@@ -216,6 +215,7 @@ const Node* Parser::type_declarations() {
 				nextToken = TokenType::const_ident;
 				break;
 			case TokenType::const_ident:
+				shouldMoveNext = true;
 				nextToken = TokenType::op_eq;
 				break;
 			case TokenType::op_eq:
@@ -232,10 +232,8 @@ const Node* Parser::type_declarations() {
 				else {
 					shouldProceed = false;
 				}
-				shouldProceed = false;
 				break;
 			default:
-				// SYNTAX ERROR
 				shouldProceed = false;
 				break;
 			}
@@ -290,7 +288,6 @@ const Node* Parser::var_declarations() {
 				}
 				break;
 			default:
-				// SYNTAX ERROR
 				shouldProceed = false;
 				break;
 			}
@@ -309,7 +306,7 @@ const Node* Parser::procedure_declaration() {
 	*/
 	procedure_heading();
 	Token token = *scanner_->nextToken();
-	if (token.getType() == TokenType::comma)
+	if (token.getType() == TokenType::semicolon)
 	{
 		procedure_body();
 	}
@@ -325,14 +322,25 @@ const Node* Parser::procedure_heading() {
 	[FormalParameters] -> Optional
 	*/
 	bool shouldProceed = true;
+	bool shouldMoveNext = true;
 	TokenType nextToken = TokenType::kw_procedure;
+	Token token = *scanner_->peekToken();
+	if (token.getType() == TokenType::kw_procedure)
+	{
+		nextToken = TokenType::const_ident;
+		shouldMoveNext = false;
+	}
 	while (shouldProceed)
 	{
-		Token token = *scanner_->nextToken();
+		if (shouldMoveNext)
+		{
+			token = *scanner_->nextToken();
+		}
 		switch (token.getType())
 		{
 		case TokenType::kw_procedure:
 			nextToken = TokenType::const_ident;
+			shouldMoveNext = true;
 			break;
 		case TokenType::const_ident:
 			shouldProceed = false;
@@ -369,6 +377,9 @@ const Node* Parser::procedure_body() {
 		if (token.getType() != TokenType::const_ident)
 		{
 			// SYNTAX ERROR
+		}
+		else {
+			// check whether the names are equal on end and begin position
 		}
 	}
 	else {
@@ -699,12 +710,10 @@ const Node* Parser::statement_sequence() {
 		if (token.getType() != TokenType::semicolon)
 		{
 			shouldRepeat = false;
-			// SYNTAX ERROR
 		}
 		else {
 			statement();
 		}
-
 	}
 	return nullptr;
 }
@@ -730,6 +739,7 @@ const Node* Parser::statement() {
 		}*/
 		break;
 	default:
+		// SYNTAX ERROR
 		break;
 	}
 	return nullptr;
