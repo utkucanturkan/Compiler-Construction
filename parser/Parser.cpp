@@ -20,7 +20,6 @@ const std::string ident() {
 	return "";
 }
 
-// logger_->error(token.getPosition(), " - Syntax Error");
 const Node* Parser::module()
 {
 	/*
@@ -735,6 +734,7 @@ const Node* Parser::statement() {
 	}
 	return nullptr;
 }
+
 const Node* Parser::assignment() {
 	/*
 	ident selector ":=" expression
@@ -809,7 +809,6 @@ const Node* Parser::actual_parameters() {
 	}
 	return nullptr;
 }
-
 
 const Node* Parser::if_statement() {
 	/*
