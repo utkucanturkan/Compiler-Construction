@@ -1,2 +1,12 @@
-﻿  Parser.cpp
+﻿  Building Custom Rule C:/Users/utkucanturkan/Desktop/oberon0c/CMakeLists.txt
+  IdentToken.cpp
+  Node.cpp
+  NumberToken.cpp
+  Scanner.cpp
+  StringToken.cpp
+  Token.cpp
+  Logger.cpp
+  main.cpp
+  Parser.cpp
+  Generating Code...
   oberon0c.vcxproj -> C:\Users\utkucanturkan\Desktop\oberon0c\build\Debug\oberon0c.exe
