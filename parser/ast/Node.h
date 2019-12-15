@@ -14,11 +14,22 @@
 #include "../../util/Logger.h"
 
 enum class NodeType : char {
-	unary_expression, binary_expression,
-	constant_reference, boolean_constant, number_constant, string_constant,
-	type_reference, record_type, array_type, basic_type,
-	field, parameter, variable, variable_reference,
-	module, procedure
+	unary_expression,
+	binary_expression,
+	constant_reference,
+	boolean_constant,
+	number_constant,
+	string_constant,
+	type_reference,
+	record_type,
+	array_type,
+	basic_type,
+	field,
+	parameter,
+	variable,
+	variable_reference,
+	module,
+	procedure
 };
 
 class Node {
@@ -36,7 +47,6 @@ public:
 
 	virtual void print(std::ostream& stream) const = 0;
 	friend std::ostream& operator<<(std::ostream& stream, const Node& node);
-
 };
 
 #endif //OBERON0C_AST_H

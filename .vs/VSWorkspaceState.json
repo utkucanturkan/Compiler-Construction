@@ -1,0 +1,10 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\parser",
+    "\\parser\\ast",
+    "\\scanner"
+  ],
+  "SelectedNode": "\\scanner\\NumberToken.cpp",
+  "PreviewInSolutionExplorer": false
+}

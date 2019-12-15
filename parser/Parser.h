@@ -8,6 +8,7 @@
 
 #include "../scanner/Scanner.h"
 #include "ast/Node.h"
+#include "ast/ModuleNode.h"
 
 class Parser
 {
@@ -18,9 +19,9 @@ private:
 
     const std::string ident();
 
-    const Node* module();
-    const Node* declarations();
-    const Node* const_declarations();
+    const ModuleNode* module();
+    const std::vector<const DeclarationNode*> declarations();
+    const std::vector<const ConstDeclarationNode*> const_declarations();
     const Node* type_declarations();
     const Node* var_declarations();
     const Node* procedure_declaration();
@@ -37,7 +38,7 @@ private:
     const Node* procedure_body();
     const Node* formal_parameters();
     const Node* fp_section();
-    const Node* statement_sequence();
+    const std::vector<const StatementNode*> statement_sequence();
     const Node* statement();
     const Node* assignment();
     const Node* procedure_call();

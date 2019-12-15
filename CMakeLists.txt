@@ -18,5 +18,9 @@ add_executable(oberon0c
         scanner/Token.cpp
         scanner/Token.h
         util/Logger.cpp
-        util/Logger.h
-        main.cpp parser/Parser.h parser/ast/Node.h parser/Parser.cpp)
+        util/Logger.h                 
+        parser/Parser.cpp
+        parser/Parser.h
+        parser/ast/Node.h
+        parser/ast/Node.cpp
+        main.cpp)

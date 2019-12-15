@@ -321,7 +321,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\scanner\IdentToken.cpp" />
-    <ClCompile Include="Node.cpp" />
     <ClInclude Include="C:\Users\utkucanturkan\Desktop\oberon0c\scanner\IdentToken.h" />
     <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\scanner\NumberToken.cpp" />
     <ClInclude Include="C:\Users\utkucanturkan\Desktop\oberon0c\scanner\NumberToken.h" />
@@ -333,10 +332,12 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\Users\utkucanturkan\Desktop\oberon0c\scanner\Token.h" />
     <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\util\Logger.cpp" />
     <ClInclude Include="C:\Users\utkucanturkan\Desktop\oberon0c\util\Logger.h" />
-    <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\main.cpp" />
+    <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp" />
     <ClInclude Include="C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.h" />
     <ClInclude Include="C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\Node.h" />
-    <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp" />
+    <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\Node.cpp" />
+    <ClCompile Include="C:\Users\utkucanturkan\Desktop\oberon0c\main.cpp" />
+    <ClInclude Include="ModuleNode.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\utkucanturkan\Desktop\oberon0c\build\ZERO_CHECK.vcxproj">
