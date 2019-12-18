@@ -9,6 +9,10 @@
 #include "../scanner/Scanner.h"
 #include "ast/Node.h"
 #include "ast/ModuleNode.h"
+#include "ast/ConstDeclarationNode.h"
+#include "ast/TypeDeclarationNode.h"
+#include "ast/VarDeclarationNode.h"
+#include "ast/ProcedureDeclarationNode.h"
 
 class Parser
 {
@@ -22,30 +26,30 @@ private:
     const ModuleNode* module();
     const std::vector<const DeclarationNode*> declarations();
     const std::vector<const ConstDeclarationNode*> const_declarations();
-    const Node* type_declarations();
-    const Node* var_declarations();
-    const Node* procedure_declaration();
-    const Node* expression();
-    const Node* simple_expression();
-    const Node* term();
-    const Node* factor();
-    const Node* type();
-    const Node* array_type();
-    const Node* record_type();
-    const Node* field_list();
-    const Node* ident_list();
-    const Node* procedure_heading();
-    const Node* procedure_body();
-    const Node* formal_parameters();
-    const Node* fp_section();
+    const std::vector<const TypeDeclarationNode*> type_declarations();
+    const std::vector<const VarDeclarationNode*> var_declarations();
+    const ProcedureDeclarationNode* procedure_declaration();
+    const ExpressionNode* expression();
+    const SimpleExpressionNode* simple_expression();
+    const TermNode* term();
+    const FactorNode* factor();
+    const TypeNode* type();
+    const ArrayTypeNode* array_type();
+    const RecordTypeNode* record_type();
+    const FieldListNode* field_list();
+    const std::vector<const std::string> ident_list();
+    const ProcedureHeadingNode* procedure_heading();
+    const ProcedureBodyNode* procedure_body();
+    const std::vector<const FormalParameterNode*> formal_parameters();
+    const FormalParameterNode* fp_section();
     const std::vector<const StatementNode*> statement_sequence();
-    const Node* statement();
-    const Node* assignment();
-    const Node* procedure_call();
-    const Node* if_statement();
-    const Node* while_statement();
-    const Node* actual_parameters();
-    const Node* selector();
+    const StatementNode* statement();
+    const AssignmentStatementNode* assignment();
+    const ProcedureCallStatementNode* procedure_call();
+    const IfStatementNode* if_statement();
+    const WhileStatementNode* while_statement();
+    const std::vector<const ExpressionNode*> actual_parameters();
+    const std::vector<const SelectorNode*> selector();
 
 public:
     explicit Parser(Scanner *scanner, Logger *logger);

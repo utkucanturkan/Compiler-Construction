@@ -1,7 +1,4 @@
 #include "ModuleNode.h"
-#include "ModuleNode.h"
-#include "ModuleNode.h"
-
 
 ModuleNode::ModuleNode(std::string _name, FilePos filePos) : Node(NodeType::module, filePos), name(_name) {
 
@@ -15,7 +12,7 @@ void ModuleNode::addDeclaration(const DeclarationNode* declaration) {
 	bool isDeclarationOk = true;
 	for (auto& d : declarations)
 	{
-		if (d->name == declaration->name && d->type == declaration->type)
+		if (d->name == declaration->name /*&& d->type == declaration->type*/)
 		{
 			isDeclarationOk = false;
 			break;

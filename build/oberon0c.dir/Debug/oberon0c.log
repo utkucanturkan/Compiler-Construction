@@ -1,12 +1,112 @@
 ﻿  Building Custom Rule C:/Users/utkucanturkan/Desktop/oberon0c/CMakeLists.txt
   IdentToken.cpp
-  Node.cpp
   NumberToken.cpp
   Scanner.cpp
   StringToken.cpp
   Token.cpp
   Logger.cpp
-  main.cpp
   Parser.cpp
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(16,32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(16,20): error C2146: syntax error: missing '>' before identifier 'SelectorNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(33,66): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(33,52): error C2143: syntax error: missing ',' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(34,22): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(34,22): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(34,34): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\TermNode.h(8,35): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\TermNode.h(8,20): error C2146: syntax error: missing '>' before identifier 'TermNodeElement'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\SimpleExpressionNode.h(8,43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\SimpleExpressionNode.h(8,20): error C2146: syntax error: missing '>' before identifier 'SimpleExpressionElement'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(13,30): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(13,20): error C2146: syntax error: missing '>' before identifier 'ElseIfNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(14,16): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(14,16): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(14,26): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FieldListNode.h(10,16): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FieldListNode.h(10,16): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FieldListNode.h(10,26): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(7,105): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(7,62): error C2143: syntax error: missing ',' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(8,28): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(8,28): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(8,37): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(9,25): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(9,25): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(9,31): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(16,39): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(16,20): error C2146: syntax error: missing '>' before identifier 'FormalParameterNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(134,2): error C2361: initialization of 'pdn' is skipped by 'default' label
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(128): message : see declaration of 'pdn'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(175,44): warning C4129: ' ': unrecognized character escape sequence
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(233,44): warning C4129: ' ': unrecognized character escape sequence
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\include\xmemory(740,1): error C2338: The C++ Standard forbids containers of const elements because allocator<const T> is ill-formed.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\include\xmemory(634): message : see reference to class template instantiation 'std::allocator<const std::string>' being compiled
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\include\xmemory(690): message : see reference to class template instantiation 'std::_Default_allocator_traits<_Alloc>' being compiled
+          with
+          [
+              _Alloc=std::allocator<const std::string>
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\include\vector(418): message : see reference to class template instantiation 'std::allocator_traits<_Alloc>' being compiled
+          with
+          [
+              _Alloc=std::allocator<const std::string>
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\include\vector(418): message : see reference to alias template instantiation 'std::_Rebind_alloc_t<std::allocator<const std::string>,_Ty>' being compiled
+          with
+          [
+              _Ty=const std::string
+          ]
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(268): message : see reference to class template instantiation 'std::vector<const std::string,std::allocator<const std::string>>' being compiled
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\include\xmemory(768,1): error C2535: '_Ty *std::allocator<_Ty>::address(_Ty &) noexcept const': member function already defined or declared
+          with
+          [
+              _Ty=const std::string
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\include\xmemory(764): message : see declaration of 'std::allocator<const std::string>::address'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(294,44): warning C4129: ' ': unrecognized character escape sequence
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(329,48): error C2661: 'ProcedureDeclarationNode::ProcedureDeclarationNode': no overloaded function takes 2 arguments
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(491,33): error C2664: 'IntegerFactorNode::IntegerFactorNode(IntegerFactorNode &&)': cannot convert argument 1 from 'const std::string' to 'int'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(491,30): message : No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(27,2): message : see declaration of 'IntegerFactorNode::IntegerFactorNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(499,32): error C2664: 'ExpressionFactorNode::ExpressionFactorNode(ExpressionFactorNode &&)': cannot convert argument 1 from 'const ExpressionNode *' to 'const int'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(499,29): message : There is no context in which this conversion is possible
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(33,2): message : see declaration of 'ExpressionFactorNode::ExpressionFactorNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(621,4): warning C4834: discarding return value of function with 'nodiscard' attribute
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(649,18): error C2039: 'typeNode': is not a member of 'FieldListNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FieldListNode.h(7): message : see declaration of 'FieldListNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(862,4): warning C4834: discarding return value of function with 'nodiscard' attribute
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(1114,21): error C2039: 'elseNode': is not a member of 'IfStatementNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(9): message : see declaration of 'IfStatementNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\Parser.cpp(1234,4): warning C4834: discarding return value of function with 'nodiscard' attribute
+  Node.cpp
+  main.cpp
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(16,32): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(16,20): error C2146: syntax error: missing '>' before identifier 'SelectorNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(33,66): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(33,52): error C2143: syntax error: missing ',' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(34,22): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(34,22): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FactorNode.h(34,34): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\TermNode.h(8,35): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\TermNode.h(8,20): error C2146: syntax error: missing '>' before identifier 'TermNodeElement'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\SimpleExpressionNode.h(8,43): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\SimpleExpressionNode.h(8,20): error C2146: syntax error: missing '>' before identifier 'SimpleExpressionElement'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(13,30): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(13,20): error C2146: syntax error: missing '>' before identifier 'ElseIfNode'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(14,16): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(14,16): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\StatementNode.h(14,26): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FieldListNode.h(10,16): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FieldListNode.h(10,16): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast\FieldListNode.h(10,26): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(7,105): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(7,62): error C2143: syntax error: missing ',' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(8,28): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(8,28): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(8,37): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(9,25): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(9,25): error C2143: syntax error: missing ';' before '*'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(9,31): error C2238: unexpected token(s) preceding ';'
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(16,39): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+C:\Users\utkucanturkan\Desktop\oberon0c\parser\ast/ProcedureDeclarationNode.h(16,20): error C2146: syntax error: missing '>' before identifier 'FormalParameterNode'
   Generating Code...
-  oberon0c.vcxproj -> C:\Users\utkucanturkan\Desktop\oberon0c\build\Debug\oberon0c.exe

@@ -5,6 +5,6 @@
     "\\parser\\ast",
     "\\scanner"
   ],
-  "SelectedNode": "\\scanner\\NumberToken.cpp",
+  "SelectedNode": "\\parser\\Parser.cpp",
   "PreviewInSolutionExplorer": false
 }

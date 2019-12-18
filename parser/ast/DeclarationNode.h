@@ -2,11 +2,7 @@
 
 class DeclarationNode {
 public:
-	std::string name;
+	explicit DeclarationNode(std::string _ident, std::string _type);
+	std::string identifier;
 	std::string type;
-};
-
-class ConstDeclarationNode :public DeclarationNode {
-
-
 };
