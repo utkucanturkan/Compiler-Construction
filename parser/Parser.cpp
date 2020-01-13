@@ -5,6 +5,20 @@
 #include <iostream>
 #include "Parser.h"
 #include <IdentToken.h>
+#include "NumberToken.h"
+#include "StringToken.h"
+#include <ast\Expression\SimpleExpressionElement.h>
+#include <ast\Expression\TermElement.h>
+#include <ast\Expression\IdentSelectorFactor.h>
+#include <ast\Expression\StringFactor.h>
+#include <ast\Expression\NumberFactor.h>
+#include <ast\Expression\ExpressionFactor.h>
+#include <ast\Expression\NotFactor.h>
+#include <ast\Type\IdentType.h>
+#include <ast\Statement\ElseIf.h>
+#include <ast\Statement\Else.h>
+#include <ast\Selector\IdentSelector.h>
+#include <ast\Selector\IndexSelector.h>
 
 Parser::Parser(Scanner* scanner, Logger* logger) :
 	scanner_(scanner), logger_(logger) {
@@ -17,1286 +31,1167 @@ const std::unique_ptr<const Node> Parser::parse() {
 }
 
 const std::string Parser::ident() {
-	IdentToken* token = dynamic_cast<IdentToken*>(const_cast<Token*>(scanner_->peekToken()));
-	return token->getValue();
+	std::string result;
+	token_->print(std::cout);
+	if (token_->getType() == TokenType::const_ident) {
+		result = static_cast<const IdentToken*>(token_)->getValue();
+	}
+	return result;
 }
 
-const ModuleNode* Parser::module()
+const Module* Parser::module()
 {
-	//
 	// "MODULE" ident ";" declarations ["BEGIN" StatementSequence] "END" ident "."
-	//
-
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_module)
+	token_ = scanner_->nextToken().get();
+	if (token_->getType() == TokenType::kw_module)
 	{
-		FilePos filePos = token.getPosition();
-		token = *scanner_->nextToken();
-		if (token.getType() == TokenType::const_ident)
+		token_ = scanner_->nextToken().get();
+		std::string name = ident();
+		if (!name.empty())
 		{
-			std::string name = ident();
-			ModuleNode moduleNode(name, filePos);
-			token = *scanner_->nextToken();
-			if (token.getType() == TokenType::semicolon)
+			token_ = scanner_->nextToken().get();
+			if (token_->getType() == TokenType::semicolon)
 			{
-				token = *scanner_->nextToken();
-				try
-				{
-					for (const DeclarationNode* declarationNode : declarations()) {
-						moduleNode.addDeclaration(declarationNode);
+				token_ = scanner_->nextToken().get();
+				Module moduleNode(name, token_->getPosition());
+
+				//
+				// Control the declarations name whether there is a duplicated name
+				//
+
+				for (const Declaration* declarationNode : declarations()) {
+					if (moduleNode.addDeclaration(declarationNode)) {
+						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; " + declarationNode->identifier + " is duplicated.");
 					}
 				}
-				catch (const std::exception&)
+				if (token_->getType() == TokenType::kw_begin)
 				{
-					logger_->error(token.getPosition(), "- SEMANTIC ERROR; A declaration name has been already used");
-				}
-				token = *scanner_->nextToken();
-				if (token.getType() == TokenType::kw_begin)
-				{
-					token = *scanner_->nextToken();
+					token_ = scanner_->nextToken().get();
+
+					//
+					// Adding statements to the module
+					//
+
 					for (auto& statementNode : statement_sequence()) {
 						moduleNode.addStatement(statementNode);
 					}
 				}
-				if (token.getType() == TokenType::kw_end)
+				if (token_->getType() == TokenType::kw_end)
 				{
-					token = *scanner_->nextToken();
-					if (token.getType() == TokenType::const_ident)
+					token_ = scanner_->nextToken().get();
+					std::string name = ident();
+					if (!name.empty())
 					{
-						name = ident();
+						//
+						// Control the module name that is identified after END keyword.
+						// The name must be same as the main name
+						//
+
 						if (moduleNode.checkName(name))
 						{
-							token = *scanner_->nextToken();
-							if (token.getType() == TokenType::period)
+							token_ = scanner_->nextToken().get();
+							if (token_->getType() == TokenType::period)
 							{
+								token_ = scanner_->nextToken().get();
+								//
+								// Every control is alright then return the module
 								return &moduleNode;
 							}
 							else
 							{
-								logger_->error(token.getPosition(), "- SYNTAX ERROR; \".\" is missing");
+								logger_->error(token_->getPosition(), "- SYNTAX ERROR; \".\" is missing.");
 							}
 						}
 						else {
-							logger_->error(token.getPosition(), "- SEMANTIC ERROR; Module name is not correct");
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Module name is not correct.");
 						}
 					}
 					else {
-						logger_->error(token.getPosition(), "- SYNTAX ERROR; Module name is not identified");
+						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Module name is missing.");
 					}
 				}
 				else {
-					logger_->error(token.getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing");
+					logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing");
 				}
 			}
 			else {
-				logger_->error(token.getPosition(), "- SYNTAX ERROR; \";\" is missing");
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \";\" is missing");
 			}
 		}
 		else {
-			logger_->error(token.getPosition(), "- SYNTAX ERROR; Module name is not identified");
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; MODULE idetifier is not valid.");
 		}
 	}
 	else {
-		return nullptr;
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"MODULE\" keyword is missing.");
 	}
+	return nullptr;
 }
 
-const std::vector<const DeclarationNode*> Parser::declarations() {
-	std::vector<const DeclarationNode*> declarations;
-	/*
-	["CONST" {ident "=" expression ";"}]
-	["TYPE" {ident "=" type ";"}]
-	["VAR" {IdentList ":" type ";"}]
-	{ProcedureDeclaration ";"}.
-	*/
-	Token token = *scanner_->peekToken();
-	switch (token.getType())
-	{
-	case TokenType::kw_const:
-		for (auto& constNode : const_declarations()) {
-			declarations.push_back(constNode);
-		}
-	case TokenType::kw_type:
-		for (auto& typeNode : type_declarations()) {
-			declarations.push_back(typeNode);
-		}
-	case TokenType::kw_var:
-		for (auto& varNode : var_declarations()) {
-			declarations.push_back(varNode);
-		}
-	case TokenType::kw_procedure:
-		const ProcedureDeclarationNode* pdn = procedure_declaration();
-		if (pdn != nullptr)
-		{
-			declarations.push_back(pdn);
-		}
-		break;
-	default:
-		return declarations;
-	}
-}
+const std::vector<const Declaration*> Parser::declarations() {
+	std::vector<const Declaration*> declarationsNode;
 
-const std::vector<const ConstDeclarationNode*> Parser::const_declarations() {
-	/*
-		"CONST"
-		{ident "=" expression ";"} -> repetation
-	*/
-	std::vector<const ConstDeclarationNode*> constDeclarations;
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_const)
+	// ["CONST" {ident "=" expression ";"}]
+	// ["TYPE" {ident "=" type ";"}]
+	// ["VAR" {IdentList ":" type ";"}]
+	// {ProcedureDeclaration ";"}.
+
+	bool shouldRepeat = true;
+	while (shouldRepeat)
 	{
-		bool shouldProceed = true;
-		token = *scanner_->nextToken();
-		while (shouldProceed)
+		if (token_->getType() == TokenType::kw_const || token_->getType() == TokenType::kw_type || token_->getType() == TokenType::kw_var || token_->getType() == TokenType::kw_procedure)
 		{
-			if (token.getType() == TokenType::const_ident)
+			if (token_->getType() == TokenType::kw_const)
 			{
-				ConstDeclarationNode constNode(ident());
-				token = *scanner_->nextToken();
-				if (token.getType() == TokenType::op_eq)
+				for (const ConstDeclaration* constDeclarations : const_declarations()) {
+					declarationsNode.push_back(constDeclarations);
+				}
+			}
+
+			if (token_->getType() == TokenType::kw_type)
+			{
+				for (const TypeDeclaration* typeDeclarations : type_declarations()) {
+					declarationsNode.push_back(typeDeclarations);
+				}
+			}
+
+			if (token_->getType() == TokenType::kw_var) {
+				for (const VarDeclaration* varDeclarations : var_declarations()) {
+					declarationsNode.push_back(varDeclarations);
+				}
+			}
+
+			if (token_->getType() == TokenType::kw_procedure)
+			{
+				const ProcedureDeclaration* pN = procedure_declaration();
+				if (pN != nullptr)
 				{
-					token = *scanner_->nextToken();
-					const ExpressionNode* expressionNode = expression(); // MOVES NEXT TOKEN
-					if (expressionNode != nullptr)
+					declarationsNode.push_back(pN);
+				}
+				else {
+					shouldRepeat = false;
+				}
+			}
+		}
+		else {
+			shouldRepeat = false;
+		}
+	}
+	return declarationsNode;
+}
+
+const std::vector<const ConstDeclaration*> Parser::const_declarations() {
+	// "CONST" {ident "=" expression ";"} -> repetation
+	std::vector<const ConstDeclaration*> constDeclarations;
+	token_ = scanner_->nextToken().get();
+	std::string name = ident();
+	if (!name.empty())
+	{
+		bool shouldRepeat = true;
+		while (shouldRepeat)
+		{
+			token_ = scanner_->nextToken().get();
+			if (token_->getType() == TokenType::op_eq)
+			{
+				token_ = scanner_->nextToken().get();
+				const Expression* expressionNode = expression();
+				if (expressionNode != nullptr)
+				{
+					//
+					// Expression must be a constant.
+					//
+					if (token_->getType() == TokenType::semicolon)
 					{
-						constNode.expression = expressionNode;
-						token = *scanner_->peekToken();
-						if (token.getType() == TokenType::semicolon)
+						logger_->info("CONST Declaration", "Name: " + name);
+						ConstDeclaration constNode(name);
+						constDeclarations.push_back(&constNode);
+						token_ = scanner_->nextToken().get();
+						name = ident();
+						if (name.empty())
 						{
-							constDeclarations.push_back(&constNode);
-							token = *scanner_->nextToken();
-							if (token.getType() != TokenType::const_ident)
-							{
-								shouldProceed = false;
-							}
-						}
-						else {
-							shouldProceed = false;
-							logger_->error(token.getPosition(), "- SYNTAX ERROR; \";\ is missing");
+							shouldRepeat = false;
 						}
 					}
 					else {
-						shouldProceed = false;
-						logger_->error(token.getPosition(), "- SYNTAX ERROR; No expression");
+						logger_->error(token_->getPosition(), "- SYNTAX ERROR; \";\" is missing.");
+						shouldRepeat = false;
 					}
 				}
 				else {
-					shouldProceed = false;
-					logger_->error(token.getPosition(), "- SYNTAX ERROR; \"=\" is missing");
+					shouldRepeat = false;
 				}
 			}
 			else {
-				shouldProceed = false;
-				logger_->error(token.getPosition(), "- SYNTAX ERROR; No valid identatiton");
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"=\" is missing.");
+				shouldRepeat = false;
 			}
 		}
+	}
+	else {
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; Const declaration name is not valid.");
 	}
 	return constDeclarations;
 }
 
-const std::vector<const TypeDeclarationNode*> Parser::type_declarations() {
-	/*
-		"TYPE"
-		{ident "=" type ";"} -> repetition
-	*/
-	std::vector<const TypeDeclarationNode*> typeDeclarations;
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_type)
+const std::vector<const TypeDeclaration*> Parser::type_declarations() {
+	// "TYPE" {ident "=" type ";"} -> repetition
+	std::vector<const TypeDeclaration*> typeDeclarations;
+	bool shouldProceed = true;
+	token_ = scanner_->nextToken().get();
+	std::string name = ident();
+	if (!name.empty())
 	{
-		bool shouldProceed = true;
-		token = *scanner_->nextToken();
 		while (shouldProceed)
 		{
-			if (token.getType() == TokenType::const_ident)
+			token_ = scanner_->nextToken().get();
+			if (token_->getType() == TokenType::op_eq)
 			{
-				TypeDeclarationNode typeNode(ident());
-				token = *scanner_->nextToken();
-				if (token.getType() == TokenType::op_eq)
+				token_ = scanner_->nextToken().get();
+				const Type* typeN = type();
+				if (typeN != nullptr)
 				{
-					token = *scanner_->nextToken();
-					const TypeNode* typeN = type(); // MOVES NEXT TOKEN
-					if (typeN != nullptr)
+					if (token_->getType() == TokenType::semicolon)
 					{
-						typeNode.type = typeN;
-						token = *scanner_->peekToken();
-						if (token.getType() == TokenType::semicolon)
+						logger_->info("TYPE Declaration", "Name: " + name);
+						TypeDeclaration typeNode(name);
+						//typeNode.type = typeN;
+						typeDeclarations.push_back(&typeNode);
+						token_ = scanner_->nextToken().get();
+						name = ident();
+						if (name.empty())
 						{
-							typeDeclarations.push_back(&typeNode);
-							token = *scanner_->nextToken();
-							if (token.getType() != TokenType::const_ident)
-							{
-								shouldProceed = false;
-							}
-						}
-						else {
 							shouldProceed = false;
-							logger_->error(token.getPosition(), "- SYNTAX ERROR; \";\ is missing");
 						}
 					}
 					else {
 						shouldProceed = false;
-						logger_->error(token.getPosition(), "- SYNTAX ERROR; No type");
+						logger_->error(token_->getPosition(), "- SYNTAX ERROR; \";\ is missing.");
 					}
 				}
 				else {
 					shouldProceed = false;
-					logger_->error(token.getPosition(), "- SYNTAX ERROR; \"=\" is missing");
 				}
 			}
 			else {
 				shouldProceed = false;
-				logger_->error(token.getPosition(), "- SYNTAX ERROR; No valid identatiton");
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"=\" is missing.");
 			}
 		}
+	}
+	else {
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; Type declaration name is not valid.");
 	}
 	return typeDeclarations;
 }
 
-const std::vector<const VarDeclarationNode*> Parser::var_declarations() {
-	/*
-		"VAR"
-		{IdentList ":" type ";"} -> repetation
-	*/
-	std::vector<const VarDeclarationNode*> varDeclarations;
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_var)
+const std::vector<const VarDeclaration*> Parser::var_declarations() {
+	// "VAR" {IdentList ":" type ";"} -> repetation
+	token_ = scanner_->nextToken().get();
+	std::vector<const VarDeclaration*> varDeclarations;
+	bool shouldRepeat = true;
+	while (shouldRepeat)
 	{
-		bool shouldProceed = true;
-		token = *scanner_->nextToken();
-		while (shouldProceed)
+		std::vector<const std::string> identList = ident_list();
+		if (identList.size() > 0)
 		{
-			std::vector<const std::string> identList = ident_list();	// MOVES NEXT TOKEN
-			if (identList.size() > 0)
+			if (token_->getType() == TokenType::colon)
 			{
-				token = *scanner_->peekToken();
-				if (token.getType() == TokenType::colon)
+				token_ = scanner_->nextToken().get();
+				const Type* typeNode = type();
+				if (token_->getType() == TokenType::semicolon)
 				{
-					token = *scanner_->nextToken();
-					const TypeNode* typeNode = type(); // MOVES NEXT TOKEN
-					if (typeNode != nullptr)
-					{
-						token = *scanner_->peekToken();
-						if (token.getType() == TokenType::semicolon)
-						{
-							for (const std::string& ident : identList) {
-								VarDeclarationNode varNode(ident);
-								varNode.type = typeNode;
-								varDeclarations.push_back(&varNode);
-							}
-							token = *scanner_->nextToken();
-							if (token.getType() != TokenType::const_ident)
-							{
-								shouldProceed = false;
-							}
-						}
-						else {
-							shouldProceed = false;
-							logger_->error(token.getPosition(), "- SYNTAX ERROR; \";\ is missing");
-						}
+					for (const std::string& ident : identList) {
+						VarDeclaration varNode(ident);
+						//varNode.type = typeNode;
+						varDeclarations.push_back(&varNode);
 					}
-					else {
-						shouldProceed = false;
-						logger_->error(token.getPosition(), "- SYNTAX ERROR; No type");
-					}
+					token_ = scanner_->nextToken().get();
 				}
 				else {
-					logger_->error(token.getPosition(), "- SYNTAX ERROR; \":\" is missing");
+					shouldRepeat = false;
+					logger_->error(token_->getPosition(), "- SYNTAX ERROR; \";\ is missing");
 				}
 			}
 			else {
-				shouldProceed = false;
-				logger_->error(token.getPosition(), "- SYNTAX ERROR; variable identation is not correct");
+				shouldRepeat = false;
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \":\" is missing");
 			}
 		}
 	}
 	return varDeclarations;
 }
 
-const ProcedureDeclarationNode* Parser::procedure_declaration() {
-	/*
-	ProcedureHeading ";" ProcedureBody
-	*/
-	const ProcedureHeadingNode* heading = procedure_heading(); // MOVES NEXT TOKEN ?
+const ProcedureDeclaration* Parser::procedure_declaration() {
+	// ProcedureHeading ";" ProcedureBody
+	const ProcedureHeading* heading = procedure_heading();
 	if (heading != nullptr)
 	{
-		Token token = *scanner_->peekToken();
-		if (token.getType() == TokenType::semicolon)
+		if (token_->getType() == TokenType::semicolon)
 		{
-			token = *scanner_->nextToken();
-			const ProcedureBodyNode* body = procedure_body();
+			token_ = scanner_->nextToken().get();
+			const ProcedureBody* body = procedure_body();
 			if (body != nullptr)
 			{
-				ProcedureDeclarationNode pdN(heading, body);
+				ProcedureDeclaration pdN(heading, body);
 				return &pdN;
 			}
-			else {
-				// SYNTAX ERROR: procedure body is not valid
-			}
 		}
 		else {
-			// SYNTAX ERROR: ";" is missing
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \";\" is missing");
 		}
 	}
-	else {
-		// SYNTAX ERROR: procedure heading is not valid
-		return nullptr;
-	}
-}
-
-const ExpressionNode* Parser::expression() {
-	/*
-	SimpleExpression
-	[("=" | "#" | "<" | "<=" | ">" | ">=") SimpleExpression] -> Optional
-	*/
-	Token token = *scanner_->peekToken();
-	const SimpleExpressionNode* lhs = simple_expression(); // MOVES NEXT TOKEN
-	if (lhs != nullptr)
-	{
-		token = *scanner_->peekToken();
-		if (token.getType() == TokenType::op_eq || token.getType() == TokenType::op_neq || token.getType() == TokenType::op_lt || token.getType() == TokenType::op_leq || token.getType() == TokenType::op_gt || token.getType() == TokenType::op_geq)
-		{
-			TokenType sign = token.getType();
-			token = *scanner_->nextToken();
-			const SimpleExpressionNode* rhs = simple_expression();
-			if (rhs != nullptr)
-			{
-				return &ExpressionNode(lhs, sign, rhs);
-			}
-			else {
-				logger_->error(token.getPosition(), "- SYNTAX ERROR; No expression");
-			}
-		}
-		else {
-			return &ExpressionNode(lhs);
-		}
-	}
-	else {
-		logger_->error(token.getPosition(), "- SYNTAX ERROR; No expression");
-	}
-}
-
-const SimpleExpressionNode* Parser::simple_expression() {
-	/*
-	 ["+" | "-"] -> Optional
-	 term
-	 {("+" | "-" | "OR") term} -> repetition
-	*/
-	Token token = *scanner_->peekToken();
-	SimpleExpressionNode* simpleExpressionN = nullptr;
-	TokenType sign = TokenType::op_plus;
-	if (token.getType() == TokenType::op_plus || token.getType() == TokenType::op_minus) {
-		sign = token.getType();
-		token = *scanner_->nextToken();
-	}
-	const TermNode* termN1 = term();	// MOVES NEXT TOKEN
-	if (termN1 != nullptr)
-	{
-		simpleExpressionN = &SimpleExpressionNode();
-		const SimpleExpressionElement simpleExpressionElement1(sign, termN1);
-		simpleExpressionN->elements.push_back(&simpleExpressionElement1);
-		token = *scanner_->peekToken();
-		bool shouldRepeat = true;
-		while (shouldRepeat)
-		{
-			if (token.getType() == TokenType::op_plus || token.getType() == TokenType::op_minus || token.getType() == TokenType::op_or)
-			{
-				sign = token.getType();
-				const TermNode* termN2 = term(); // MOVES NEXT TOKEN
-				if (termN2 != nullptr)
-				{
-					const SimpleExpressionElement simpleExpressionElement2(sign, termN2);
-					simpleExpressionN->elements.push_back(&simpleExpressionElement2);
-				}
-				else {
-					shouldRepeat = false;
-					// SYNTAX ERROR
-				}
-			}
-			else {
-				shouldRepeat = false;
-			}
-		}
-	}
-	else {
-		// SYNTAX ERROR ?
-	}
-	return simpleExpressionN;
-}
-
-const TermNode* Parser::term() {
-	/*
-	factor
-	{("*" | "DIV" | "MOD" | "&") factor} -> repetition
-	*/
-	Token token = *scanner_->peekToken();
-	TermNode* termN = nullptr;
-	const FactorNode* factorN1 = factor();	// MOVES NEXT TOKEN
-	if (factorN1 != nullptr)
-	{
-		termN = &TermNode();
-		const TermNodeElement termNodeElement1(TokenType::null, factorN1);
-		termN->elements.push_back(&termNodeElement1);
-		token = *scanner_->peekToken();
-		bool shouldRepeat = true;
-		while (shouldRepeat)
-		{
-			if (token.getType() == TokenType::op_times || token.getType() == TokenType::op_div || token.getType() == TokenType::op_mod || token.getType() == TokenType::op_and)
-			{
-				TokenType sign = token.getType();
-				const FactorNode* factorN2 = factor();	// MOVES NEXT TOKEN
-				if (factorN2 != nullptr)
-				{
-					const TermNodeElement termNodeElement2(sign, factorN2);
-					termN->elements.push_back(&termNodeElement2);
-				}
-				else {
-					shouldRepeat = false;
-					// SYNTAX ERROR
-				}
-			}
-			else {
-				shouldRepeat = false;
-			}
-		}
-	}
-	else {
-		// SYNTAX ERROR
-	}
-	return termN;
-}
-
-const FactorNode* Parser::factor() {
-	/*
-	ident selector | integer | "(" expression ")" | "~" factor
-	*/
-	Token token = *scanner_->peekToken();
-	FactorNode* factorN = nullptr;
-	if (token.getType() == TokenType::const_ident)
-	{
-		IdentSelectorFactorNode isfn(ident());
-		token = *scanner_->nextToken();
-		std::vector<const SelectorNode*> selectorNodes = selector();
-		if (selectorNodes.size() > 0)
-		{
-			for (const SelectorNode* node : selectorNodes) {
-				isfn.selectors.push_back(node);
-			}
-		}
-		else {
-
-		}
-		factorN = &isfn;
-	}
-	else if (token.getType() == TokenType::const_number) {
-		IntegerFactorNode ifn(ident());
-		factorN = &ifn;
-	}
-	else if (token.getType() == TokenType::lparen) {
-		token = *scanner_->nextToken();
-		const ExpressionNode* en = expression();
-		if (en != nullptr)
-		{
-			ExpressionFactorNode efn(en);
-			factorN = &efn;
-		}
-		else {
-			//SYNTAX ERROR
-		}
-	}
-	else if (token.getType() == TokenType::op_not) {
-		const FactorNode* fn = factor();
-		if (fn != nullptr)
-		{
-			NotFactorNode nfn(fn);
-			factorN = &nfn;
-		}
-		else {
-			// SYNTAX ERROR
-		}
-	}
-	else {
-		// SYNTAX ERROR
-	}
-	return factorN;
-}
-
-const TypeNode* Parser::type() {
-	/*
-	ident | ArrayType | RecordType
-	*/
-	Token token = *scanner_->peekToken();
-	switch (token.getType())
-	{
-	case TokenType::const_ident:
-		return &IdentTypeNode(ident());
-		break;
-	case TokenType::kw_array:
-		return array_type();
-		break;
-	case TokenType::kw_record:
-		return record_type();
-		break;
-	default:
-		return nullptr;
-		break;
-	}
-}
-
-const ArrayTypeNode* Parser::array_type() {
-	/*
-	"ARRAY" expression "OF" type.
-	*/
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_array)
-	{
-		const ExpressionNode* eN = expression(); // MOVES NEXT TOKEN
-		if (eN != nullptr)
-		{
-			token = *scanner_->peekToken();
-			if (token.getType() == TokenType::kw_of)
-			{
-				token = *scanner_->nextToken();
-				const TypeNode* tN = type();
-				if (tN != nullptr)
-				{
-					return &ArrayTypeNode(eN, tN);
-				}
-			}
-		}
-	}
-	// SYNTAX ERROR
 	return nullptr;
 }
 
-const RecordTypeNode* Parser::record_type() {
-	/*
-	"RECORD" FieldList
-	{";" FieldList} -> repetition
-	"END"
-	*/
-	RecordTypeNode rtN;
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_record)
+const Expression* Parser::expression() {
+	// SimpleExpression [("=" | "#" | "<" | "<=" | ">" | ">=") SimpleExpression] -> Optional	
+	const SimpleExpression* lhs = simple_expression();
+	if (lhs != nullptr)
 	{
-		token = *scanner_->nextToken();
-		if (token.getType() == TokenType::const_ident)
+		Expression eN(lhs);
+		if (token_->getType() == TokenType::op_eq || token_->getType() == TokenType::op_neq || token_->getType() == TokenType::op_lt || token_->getType() == TokenType::op_leq || token_->getType() == TokenType::op_gt || token_->getType() == TokenType::op_geq)
 		{
-			bool shouldRepeat = true;
-			while (shouldRepeat)
+			TokenType sign = token_->getType();
+			token_ = scanner_->nextToken().get();
+			const SimpleExpression* rhs = simple_expression();
+			if (rhs != nullptr)
 			{
-				const FieldListNode* flN = field_list();
-				if (flN->identList.size() > 0 || flN != nullptr)
+				if (lhs->type == rhs->type)
 				{
-					rtN.fieldListNodes.push_back(flN);
-					token = *scanner_->peekToken();
-					if (token.getType() == TokenType::semicolon)
+					eN = Expression(lhs, sign, rhs);
+				}
+				else {
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Simple Expression types are not same.");
+					return nullptr;
+				}
+			}
+			else {
+				return nullptr;
+			}
+		}
+		eN.type = lhs->type;
+		return &eN;
+	}
+	return nullptr;
+}
+
+const SimpleExpression* Parser::simple_expression() {
+	// ["+" | "-"] term {("+" | "-" | "OR") term}
+	TokenType sign = TokenType::null;
+	if (token_->getType() == TokenType::op_plus || token_->getType() == TokenType::op_minus) {
+		sign = token_->getType();
+		token_ = scanner_->nextToken().get();
+	}
+	const Term* termNode = term();
+	if (termNode != nullptr)
+	{
+		if (sign != TokenType::null && termNode->type != ExpressionType::number)
+		{
+			// ??
+			logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Term type is not number.");
+			return nullptr;
+		}
+		SimpleExpression simpleExpressionN;
+		simpleExpressionN.type = ExpressionType::string;
+		const SimpleExpressionElement simpleExpressionElement1(sign, termNode);
+		simpleExpressionN.elements.push_back(&simpleExpressionElement1);
+		//
+		// If the term is string, after that +, -, OR signs are not valid.
+		//
+		bool shouldRepeat = termNode->type != ExpressionType::string;
+		while (shouldRepeat)
+		{
+			if (token_->getType() == TokenType::op_plus || token_->getType() == TokenType::op_minus)
+			{
+				if (termNode->type == ExpressionType::number)
+				{
+					sign = token_->getType();
+					token_ = scanner_->nextToken().get();
+					termNode = term();
+					if (termNode != nullptr)
 					{
-						token = *scanner_->nextToken();
-						if (token.getType() != TokenType::const_ident)
+						if (termNode->type == ExpressionType::number)
 						{
+							const SimpleExpressionElement simpleExpressionElement2(sign, termNode);
+							simpleExpressionN.elements.push_back(&simpleExpressionElement2);
+							simpleExpressionN.type = ExpressionType::number;
+						}
+						else {
+							// ??
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Term type is not number.");
 							shouldRepeat = false;
+							return nullptr;
 						}
 					}
 					else {
 						shouldRepeat = false;
+						return nullptr;
 					}
 				}
 				else {
-					// SYNTAX ERROR
-					// fieldList is null
+					// ??
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Term type is not number.");
+					shouldRepeat = false;
+					return nullptr;
+				}
+			}
+			else if (token_->getType() == TokenType::op_or) {
+				if (termNode->type == ExpressionType::boolean)
+				{
+					sign = token_->getType();
+					token_ = scanner_->nextToken().get();
+					termNode = term();
+					if (termNode != nullptr)
+					{
+						if (termNode->type == ExpressionType::boolean)
+						{
+							const SimpleExpressionElement simpleExpressionElement2(sign, termNode);
+							simpleExpressionN.elements.push_back(&simpleExpressionElement2);
+							simpleExpressionN.type = ExpressionType::boolean;
+						}
+						else {
+							// ??
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Term type is not boolean.");
+							shouldRepeat = false;
+							return nullptr;
+						}
+					}
+					else {
+						shouldRepeat = false;
+						return nullptr;
+					}
+				}
+				else {
+					// ??
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Term type is not boolean.");
+					shouldRepeat = false;
+					return nullptr;
+				}
+			}
+			else {
+				shouldRepeat = false;
+			}
+		}
+		return &simpleExpressionN;
+	}
+	return nullptr;
+}
+
+const Term* Parser::term() {
+	// factor {("*" | "DIV" | "MOD" | "&") factor} -> repetition
+	const Factor* factorNode = factor();
+	if (factorNode != nullptr)
+	{
+		Term termNode;
+		const TermElement termNodeElement1(TokenType::null, factorNode);
+		termNode.elements.push_back(&termNodeElement1);
+		termNode.type = ExpressionType::string;
+		//
+		// If the factor is string, after that *, DIV, MOD, & signs are not valid.
+		//
+		bool shouldRepeat = factorNode->type != ExpressionType::string;
+		while (shouldRepeat)
+		{
+			TokenType sign;
+			if (token_->getType() == TokenType::op_times || token_->getType() == TokenType::op_div || token_->getType() == TokenType::op_mod)
+			{
+				if (factorNode->type == ExpressionType::number)
+				{
+					sign = token_->getType();
+					token_ = scanner_->nextToken().get();
+					factorNode = factor();
+					if (factorNode != nullptr)
+					{
+						if (factorNode->type != ExpressionType::number)
+						{
+							const TermElement termNodeElement2(sign, factorNode);
+							termNode.elements.push_back(&termNodeElement2);
+							termNode.type = ExpressionType::number;
+						}
+						else {
+							// ??
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Factor type is not number.");
+							shouldRepeat = false;
+							return nullptr;
+						}
+					}
+					else {
+						shouldRepeat = false;
+						return nullptr;
+					}
+				}
+				else {
+					// ??
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Factor type is not number.");
+					shouldRepeat = false;
+					return nullptr;
+				}
+			}
+			else if (token_->getType() == TokenType::op_and) {
+				if (factorNode->type == ExpressionType::boolean)
+				{
+					sign = token_->getType();
+					token_ = scanner_->nextToken().get();
+					factorNode = factor();
+					if (factorNode != nullptr)
+					{
+						if (factorNode->type != ExpressionType::boolean)
+						{
+							const TermElement termNodeElement2(sign, factorNode);
+							termNode.elements.push_back(&termNodeElement2);
+							termNode.type = ExpressionType::boolean;
+						}
+						else {
+							// ??
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Factor type is not boolean.");
+							shouldRepeat = false;
+							return nullptr;
+						}
+					}
+					else {
+						shouldRepeat = false;
+						return nullptr;
+					}
+				}
+				else {
+					// ??
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Factor type is not boolean.");
+					shouldRepeat = false;
+					return nullptr;
+				}
+			}
+			else {
+				shouldRepeat = false;
+			}
+		}
+		return &termNode;
+	}
+	return nullptr;
+}
+
+const Factor* Parser::factor() {
+	// ident selector | integer | "(" expression ")" | "~" factor	
+	std::string identifier = ident();
+	if (!identifier.empty())
+	{
+		token_ = scanner_->nextToken().get();
+		IdentSelectorFactor isfn(identifier);
+		std::vector<const Selector*> selectorNodes = selector();
+		if (selectorNodes.size() > 0)
+		{
+			for (const Selector* node : selectorNodes) {
+				isfn.selectors.push_back(node);
+			}
+		}
+		return &isfn;
+	}
+	else {
+		if (token_->getType() == TokenType::const_string)
+		{
+			StringFactor sfn(static_cast<const StringToken*>(token_)->getValue());
+			token_ = scanner_->nextToken().get();
+			return &sfn;
+		}
+		else if (token_->getType() == TokenType::const_number) {
+			NumberFactor ifn(static_cast<const NumberToken*>(token_)->getValue());
+			token_ = scanner_->nextToken().get();
+			return &ifn;
+		}
+		else if (token_->getType() == TokenType::lparen) {
+			token_ = scanner_->nextToken().get();
+			const Expression* en = expression();
+			if (en != nullptr)
+			{
+				if (token_->getType() == TokenType::rparen)
+				{
+					token_ = scanner_->nextToken().get();
+					ExpressionFactor efn(en);
+					return &efn;
+				}
+				else {
+					logger_->error(token_->getPosition(), "- SYNTAX ERROR; \")\" is missing.");
+				}
+			}
+		}
+		else if (token_->getType() == TokenType::op_not) {
+			token_ = scanner_->nextToken().get();
+			const Factor* fn = factor();
+			if (fn != nullptr)
+			{
+				if (fn->type == ExpressionType::boolean)
+				{
+					NotFactor nfn(fn);
+					return &nfn;
+				}
+				else {
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Factor is not boolean.");
 				}
 			}
 		}
 		else {
-			// SYNTAX ERROR
-			return nullptr;
-		}
-
-		if (token.getType() != TokenType::kw_end)
-		{
-			// SYNTAX ERROR
-			// "END" is missing
-		}
-		else {
-			*scanner_->nextToken();
-			return &rtN;
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; Factor is not valid.");
 		}
 	}
-	else {
-		return nullptr;
-	}
+	return nullptr;
 }
 
-const FieldListNode* Parser::field_list() {
-	/*
-	[IdentList ":" type] -> optional
-	*/
-	FieldListNode fln;
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::const_ident)
+const Type* Parser::type() {
+	// ident | ArrayType | RecordType
+	std::string name = ident();
+	if (!name.empty())
 	{
-		std::vector<const std::string> identList = ident_list();	// MOVES NEXT TOKEN
+		IdentType itn(name);
+		token_ = scanner_->nextToken().get();
+		return &itn;
+	}
+	else if (token_->getType() == TokenType::kw_array) {
+		const ArrayType* aN = array_type();
+		return array_type();
+	}
+	else if (token_->getType() == TokenType::kw_record) {
+		const RecordType* rN = record_type();
+		return rN;
+	}
+	logger_->error(token_->getPosition(), "- SYNTAX ERROR; type is not valid.");
+	return nullptr;
+}
+
+const ArrayType* Parser::array_type() {
+	// "ARRAY" expression "OF" type.
+	token_ = scanner_->nextToken().get();
+	const Expression* eN = expression();
+	if (eN != nullptr)
+	{
+		if (token_->getType() == TokenType::kw_of)
+		{
+			token_ = scanner_->nextToken().get();
+			const Type* tN = type();
+			if (tN != nullptr)
+			{
+				return &ArrayType(eN, tN);
+			}
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"OF\" keyword is missing.");
+		}
+	}
+	return nullptr;
+}
+
+const RecordType* Parser::record_type() {
+	// "RECORD" FieldList {";" FieldList} "END"
+	token_ = scanner_->nextToken().get();
+	RecordType rtN;
+	const FieldList* flN = field_list();
+	if (flN != nullptr)
+	{
+		rtN.fieldListNodes.push_back(flN);
+		bool shouldRepeat = true;
+		while (shouldRepeat)
+		{
+			if (token_->getType() != TokenType::semicolon)
+			{
+				token_ = scanner_->nextToken().get();
+				flN = field_list();
+				if (flN != nullptr)
+				{
+					rtN.fieldListNodes.push_back(flN);
+				}
+				else {
+					shouldRepeat = false;
+					return nullptr;
+				}
+			}
+			else {
+				shouldRepeat = false;
+			}
+		}
+		if (token_->getType() == TokenType::kw_end)
+		{
+			token_ = scanner_->nextToken().get();
+			return &rtN;
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
+		}
+	}
+	return nullptr;
+}
+
+const FieldList* Parser::field_list() {
+	// [IdentList ":" type] -> optional
+	std::vector<const std::string> identList = ident_list();
+	if (identList.size() > 0)
+	{
+		FieldList fln;
 		for (std::string ident : identList) {
 			fln.identList.push_back(ident);
 		}
-		token = *scanner_->peekToken();
-		if (token.getType() == TokenType::colon)
+		if (token_->getType() == TokenType::colon)
 		{
-			token = *scanner_->nextToken();
-			const TypeNode* tN = type();
+			token_ = scanner_->nextToken().get();
+			const Type* tN = type();
 			if (tN != nullptr)
 			{
 				fln.typeNode = tN;
 				return &fln;
 			}
-			else {
-				// SYNTAX ERROR
-				return nullptr;
-			}
 		}
 		else {
-			// SYNTAX ERROR
-			return nullptr;
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \":\" is missing");
 		}
 	}
-	else {
-		// NO FIELD LIST
-		return &fln;
-	}
+	return nullptr;
 }
 
 const std::vector<const std::string> Parser::ident_list() {
-	/*
-	ident
-	{"," ident} -> repetition
-	*/
-	Token token = *scanner_->peekToken();
+	// ident {"," ident} -> repetition
 	std::vector<const std::string> identList;
-	if (token.getType() == TokenType::const_ident)
+	bool shouldRepeat = true;
+	while (shouldRepeat)
 	{
-		bool shouldProceed = true;
-		identList.push_back(ident());
-		token = *scanner_->nextToken();
-		while (shouldProceed)
+		std::string name = ident();
+		if (!name.empty())
 		{
-			if (token.getType() == TokenType::comma)
+			identList.push_back(name);
+			token_ = scanner_->nextToken().get();
+			if (token_->getType() != TokenType::comma)
 			{
-				token = *scanner_->nextToken();
-				if (token.getType() == TokenType::const_ident)
-				{
-					identList.push_back(ident());
-					token = *scanner_->nextToken();
-					if (token.getType() != TokenType::comma)
-					{
-						shouldProceed = false;
-					}
-				}
-				else {
-					shouldProceed = false;
-					logger_->error(token.getPosition(), "- SYNTAX ERROR; Unvalid identifier");
-				}
+				shouldRepeat = false;
 			}
 			else {
-				shouldProceed = false;
-				logger_->error(token.getPosition(), "- SYNTAX ERROR; \",\" is missing");
+				token_ = scanner_->nextToken().get();
 			}
 		}
+		else {
+			shouldRepeat = false;
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; Identifier is not valid.");
+		}
 	}
-	else {
-		logger_->error(token.getPosition(), "- SYNTAX ERROR; Unvalid identifier");
+	if (identList.size() <= 0)
+	{
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; Identifier list is null.");
 	}
-
 	return identList;
 }
 
-const ProcedureHeadingNode* Parser::procedure_heading() {
-	/*
-	"PROCEDURE" ident
-	[FormalParameters] -> Optional
-	*/
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_procedure) {
-		token = *scanner_->nextToken();
-		if (token.getType() == TokenType::const_ident)
-		{
-			ProcedureHeadingNode heading(ident());
-			token = *scanner_->nextToken();
-			for (const FormalParameterNode* fpN : formal_parameters()) {
-				heading.formalParameters.push_back(fpN);
-			}
-			return &heading;
+const ProcedureHeading* Parser::procedure_heading() {
+	// "PROCEDURE" ident [FormalParameters]
+	token_ = scanner_->nextToken().get();
+	std::string name = ident();
+	if (!name.empty())
+	{
+		ProcedureHeading heading(name);
+		token_ = scanner_->nextToken().get();
+		for (const FormalParameter* fpN : formal_parameters()) {
+			heading.formalParameters.push_back(fpN);
 		}
-		else {
-			// SYNTAX ERROR: Invalid procedure name
-		}
+		return &heading;
 	}
 	else {
-		return nullptr;
-	}
-
-
-	bool shouldProceed = true;
-	bool shouldMoveNext = false;
-	TokenType nextToken = TokenType::kw_procedure;
-	while (shouldProceed)
-	{
-		if (token.getType() == nextToken)
-		{
-			if (shouldMoveNext)
-			{
-				token = *scanner_->nextToken();
-			}
-			switch (token.getType())
-			{
-			case TokenType::kw_procedure:
-				nextToken = TokenType::const_ident;
-				shouldMoveNext = true;
-				break;
-			case TokenType::const_ident:
-				token = *scanner_->nextToken();
-				if (token.getType() == TokenType::lparen)
-				{
-					formal_parameters();
-				}
-				shouldProceed = false;
-				break;
-			default:
-				shouldProceed = false;
-				break;
-			}
-		}
-		else {
-			// SYNTAX ERROR
-			shouldProceed = false;
-		}
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; Procedure name is not valid.");
 	}
 	return nullptr;
 }
 
-const ProcedureBodyNode* Parser::procedure_body() {
-	/*
-	declarations
-	["BEGIN" StatementSequence] -> optional
-	"END" ident
-	*/
-	Token token = *scanner_->peekToken();
-	std::vector<const DeclarationNode*> declarationList = declarations();
-	if (declarationList.size() > 0)
+const ProcedureBody* Parser::procedure_body() {
+	// declarations ["BEGIN" StatementSequence] "END" ident
+	std::vector<const Declaration*> declarationList = declarations();
+	ProcedureBody pbN;
+	pbN.declarations = declarationList;
+	if (token_->getType() == TokenType::kw_begin)
 	{
-		ProcedureBodyNode pbN;
-		pbN.declarations = declarationList;
-		token = *scanner_->peekToken();
-		if (token.getType() == TokenType::kw_begin)
-		{
-			token = *scanner_->nextToken();
-			for (const StatementNode* statement : statement_sequence()) {
-				pbN.statements.push_back(statement);
-			}
+		token_ = scanner_->nextToken().get();
+		for (const Statement* statement : statement_sequence()) {
+			pbN.statements.push_back(statement);
 		}
-		if (token.getType() == TokenType::kw_end)
+	}
+	if (token_->getType() == TokenType::kw_end)
+	{
+		token_ = scanner_->nextToken().get();
+		std::string name = ident();
+		if (!name.empty())
 		{
-			token = *scanner_->nextToken();
-			if (token.getType() == TokenType::const_ident)
-			{
-				pbN.ident = ident();
-				return &pbN;
-			}
-			else {
-				// SYNTAX ERROR: No valid procedure end identifier
-			}
+			pbN.ident = name;
+			token_ = scanner_->nextToken().get();
+			return &pbN;
 		}
 		else {
-			// SYNTAX ERROR: "END" is missing
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; Procedure name is not same or identified.");
 		}
 	}
 	else {
-		// SYNTAX ERROR: Procedure has no declarations
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
 	}
 	return nullptr;
 }
 
-const std::vector<const FormalParameterNode*> Parser::formal_parameters() {
-	/*
-	"("
-	[FPSection
-		{";" FPSection} -> repetition
-	] -> optional
-	")"
-	*/
-	Token token = *scanner_->peekToken();
-	std::vector<const FormalParameterNode*> formalParameters;
-	if (token.getType() == TokenType::lparen)
+const std::vector<const FormalParameter*> Parser::formal_parameters() {
+	// "(" [FPSection {";" FPSection} ] ")"
+	std::vector<const FormalParameter*> formalParameters;
+	if (token_->getType() == TokenType::lparen)
 	{
-		token = *scanner_->nextToken();
-		if (token.getType() == TokenType::kw_var || token.getType() == TokenType::const_ident)
+		token_ = scanner_->nextToken().get();
+		const FormalParameter* fpn = fp_section();
+		if (fpn != nullptr)
 		{
-			token = *scanner_->nextToken();
-			bool shouldProceed = true;
-			while (shouldProceed)
+			formalParameters.push_back(fpn);
+			fpn = nullptr;
+			bool shouldRepeat = true;
+			while (shouldRepeat)
 			{
-				const FormalParameterNode* fpN = fp_section();
-				if (fpN != nullptr)
+				if (token_->getType() == TokenType::semicolon)
 				{
-					formalParameters.push_back(fpN);
-					token = *scanner_->peekToken();
-					if (token.getType() == TokenType::semicolon)
+					token_ = scanner_->nextToken().get();
+					fpn = fp_section();
+					if (fpn != nullptr)
 					{
-						token = *scanner_->nextToken();
-						if (token.getType() != TokenType::kw_var || token.getType() != TokenType::const_ident)
-						{
-							shouldProceed = false;
-						}
+						formalParameters.push_back(fpn);
 					}
 					else {
-						shouldProceed = false;
+						shouldRepeat = false;
 					}
 				}
 				else {
-					shouldProceed = false;
-					// SYNTAX ERROR: formalParameters are not valid
+					shouldRepeat = false;
 				}
 			}
 		}
-		if (token.getType() == TokenType::rparen)
+		if (token_->getType() == TokenType::rparen)
 		{
-			*scanner_->nextToken();
+			token_ = scanner_->nextToken().get();
 		}
 		else {
-			// SYNTAX ERROR: ")" is missing
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \")\" is missing.");
 		}
 	}
 	else {
-		// SYNTAX ERROR: "(" is missing
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"(\" is missing.");
 	}
 	return formalParameters;
 }
 
-const FormalParameterNode* Parser::fp_section() {
-	/*
-	["VAR"]					-> Optional
-	IdentList ":" type
-	*/
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_var)
+const FormalParameter* Parser::fp_section() {
+	// ["VAR"]	IdentList ":" type
+	if (token_->getType() == TokenType::kw_var)
 	{
-		token = *scanner_->nextToken();
+		token_ = scanner_->nextToken().get();
 	}
-	if (token.getType() == TokenType::const_ident)
+	std::vector<const std::string> idents = ident_list();
+	if (idents.size() > 0)
 	{
-		FormalParameterNode fpN;
-		std::vector<const std::string> idents = ident_list();
-		if (idents.size() > 0)
+		FormalParameter fpN;
+		for (std::string ident : ident_list()) {
+			fpN.identList.push_back(ident);
+		}
+		if (token_->getType() == TokenType::colon)
 		{
-			for (std::string ident : ident_list()) {
-				fpN.identList.push_back(ident);
-			}
-			token = *scanner_->peekToken();
-			if (token.getType() == TokenType::colon)
+			token_ = scanner_->nextToken().get();
+			const Type* tN = type();
+			if (tN != nullptr)
 			{
-				token = *scanner_->nextToken();
-				const TypeNode* tN = type();
-				if (tN != nullptr)
-				{
-					fpN.type = tN;
-					return &fpN;
-				}
-				else {
-					// SYNTAX ERROR
-				}
-			}
-			else {
-				// SYNTAX ERROR
+				//fpN.type = tN;
+				return &fpN;
 			}
 		}
 		else {
-			// SYNTAX ERROR
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \":\" is missing.");
 		}
-	}
-	else {
-		// SYNTAX ERROR
 	}
 	return nullptr;
 }
 
-const std::vector<const StatementNode*> Parser::statement_sequence() {
-	/*
-	statement
-	{";" statement}				-> Repetation
-	*/
-	std::vector<const StatementNode*> statementList;
+const std::vector<const Statement*> Parser::statement_sequence() {
+	// statement {";" statement}
+	std::vector<const Statement*> statementList;
 	bool shouldProceed = true;
 	while (shouldProceed)
 	{
-		const StatementNode* statementNode = statement();
+		const Statement* statementNode = statement();
 		if (statementNode != nullptr)
 		{
 			statementList.push_back(statementNode);
-			Token token = *scanner_->peekToken();
-			if (token.getType() == TokenType::semicolon)
+			if (token_->getType() == TokenType::semicolon)
 			{
-				token = *scanner_->nextToken();
+				token_ = scanner_->nextToken().get();
 			}
 			else {
 				shouldProceed = false;
 			}
+		}
+		else {
+			shouldProceed = false;
 		}
 	}
 	return statementList;
 }
 
-const StatementNode* Parser::statement() {
-	/*
-	[assignment | ProcedureCall | IfStatement | WhileStatement] -> Optional
-	*/
-	Token token = *scanner_->peekToken();
-	switch (token.getType())
+const Statement* Parser::statement() {
+	// [assignment | ProcedureCall | IfStatement | WhileStatement]
+	if (token_->getType() == TokenType::kw_if)
 	{
-	case TokenType::kw_if:
 		return if_statement();
-		break;
-	case TokenType::kw_while:
+	}
+	else if (token_->getType() == TokenType::kw_while) {
 		return while_statement();
-		break;
-	case TokenType::const_ident:
-		assignment();					// **!!**!!**!!
-		procedure_call();				// **!!**!!**!!
-		break;
-	default:
-		return nullptr;
-		break;
-	}
-}
-
-const AssignmentStatementNode* Parser::assignment() {
-	/*
-	ident selector ":=" expression
-	*/
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::const_ident)
-	{
-		std::string _ident = ident();
-		token = *scanner_->nextToken();
-		std::vector<const SelectorNode*> selectorNodes = selector(); // MOVES NEXT TOKEN
-		if (selectorNodes.size() > 0)
-		{
-			token = *scanner_->peekToken();
-			if (token.getType() != TokenType::op_becomes)
-			{
-				const ExpressionNode* eN = expression();
-				if (eN != nullptr)
-				{
-					AssignmentStatementNode asN;
-					asN.ident = _ident;
-					asN.selectors = selectorNodes;
-					asN.expression = eN;
-					return &asN;
-				}
-				else {
-					// SYNTAX ERROR: No valid expression
-				}
-			}
-			else {
-				// SYNTAX ERROR
-			}
-		}
-		else {
-			// NO SELECTORS
-		}
 	}
 	else {
-		return nullptr;
+		std::string name = ident();
+		if (!name.empty())
+		{
+			token_ = scanner_->nextToken().get();
+			std::vector<const Selector*> selectorNodes = selector();
+			const AssignmentStatement* _asN = assignment();
+			if (_asN != nullptr)
+			{
+				AssignmentStatement asN;
+				asN.ident = name;
+				asN.selectors = selectorNodes;
+				asN.expression = _asN->expression;
+				return &asN;
+			}
+			const ProcedureCallStatement* _pcsN = procedure_call();
+			if (_pcsN != nullptr)
+			{
+				ProcedureCallStatement pcsN(name);
+				pcsN.actualParameters = _pcsN->actualParameters;
+				return &pcsN;
+			}
+		}
 	}
+	return nullptr;
 }
 
-const ProcedureCallStatementNode* Parser::procedure_call() {
-	/*
-	ident selector
-	[ActualParameters] -> Optional
-	*/
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::const_ident)
+const AssignmentStatement* Parser::assignment() {
+	// ident selector ":=" expression
+	if (token_->getType() != TokenType::op_becomes)
 	{
-		ProcedureCallStatementNode pcsN(ident());
-		token = *scanner_->nextToken();
-		std::vector<const SelectorNode*> selectors = selector(); // MOVES NEXT TOKEN
-		if (selectors.size() > 0)
+		token_ = scanner_->nextToken().get();
+		const Expression* eN = expression();
+		if (eN != nullptr)
 		{
-			pcsN.selectors = selectors;
-			std::vector<const ExpressionNode*> actualParameters = actual_parameters();
-			if (actualParameters.size() > 0)	// MOVES NEXT TOKEN
-			{
-				pcsN.actualParameters = actualParameters;
-			}
-			return &pcsN;
-		}
-		else {
-			// NO SELECTOR
+			AssignmentStatement asN;
+			asN.expression = eN;
+			return &asN;
 		}
 	}
+	/*else {
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \":=\" is missing.");
+	}*/
+	return nullptr;
+}
+
+const ProcedureCallStatement* Parser::procedure_call() {
+	// ident selector [ActualParameters]
+	if (token_->getType() == TokenType::lparen)
+	{
+		token_ = scanner_->nextToken().get();
+		const std::vector<const Expression*> actualParameters = actual_parameters();
+		if (token_->getType() == TokenType::rparen)
+		{
+			token_ = scanner_->nextToken().get();
+			ProcedureCallStatement pcsn("");
+			pcsn.actualParameters = actualParameters;
+			return &pcsn;
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \")\" is missing");
+		}
+	}/*
 	else {
-		// SYNTAX ERROR: No Procedure name
-	}
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"(\" is missing");
+	}*/
 	return nullptr;
 }
 
-const IfStatementNode* Parser::if_statement() {
-	/*
-	"IF" expression "THEN" StatementSequence
-	{"ELSIF" expression "THEN" StatementSequence} -> repetition
-	["ELSE" StatementSequence] -> Optional
-	"END"
-	*/
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_if)
+const std::vector<const Expression*> Parser::actual_parameters() {
+	// "(" [expression {"," expression}] ")"
+	std::vector<const Expression*> actualParameters;
+	const Expression* eN = expression();
+	if (eN != nullptr)
 	{
-		IfStatementNode isN;
-		const ExpressionNode* eN = expression(); // MOVES NEXT TOKEN
-		if (eN != nullptr)
+		actualParameters.push_back(eN);
+		bool shouldRepeat = true;
+		while (shouldRepeat)
 		{
-			isN.expression = eN;
-			token = *scanner_->peekToken();
-			if (token.getType() == TokenType::kw_then)
+			if (token_->getType() == TokenType::comma)
 			{
-				token = *scanner_->nextToken();
-				std::vector<const StatementNode*> statements = statement_sequence();	// MOVES NEXT TOKEN
-				token = *scanner_->peekToken();
-				if (statements.size() > 0)
+				token_ = scanner_->nextToken().get();
+				const Expression* exN = expression();
+				if (exN != nullptr)
 				{
-					isN.statements = statements;
-					if (token.getType() == TokenType::kw_elsif)
-					{
-						bool shouldProceed = true;
-						while (shouldProceed)
-						{
-							token = *scanner_->nextToken();
-							ElseIfNode eiN;
-							const ExpressionNode* eN = expression();
-							token = *scanner_->peekToken();
-							if (eN != nullptr)
-							{
-								eiN.expression = eN;
-								if (token.getType() == TokenType::kw_then) {
-									std::vector<const StatementNode*> statementsEi = statement_sequence();	// MOVES NEXT TOKEN
-									token = *scanner_->peekToken();
-									if (statementsEi.size() > 0)
-									{
-										eiN.statements = statementsEi;
-										isN.elseIfNodes.push_back(&eiN);
-										if (token.getType() != TokenType::kw_elsif)
-										{
-											shouldProceed = false;
-										}
-									}
-									else {
-										// SYNTAX ERROR: No statements in elsIf clause
-										shouldProceed = false;
-									}
-								}
-								else {
-									// SYNTAX ERROR: "THEN" keyword is missing in elsIf clause
-									shouldProceed = false;
-								}
-							}
-							else {
-								// SYNTAX ERROR: No expression in elsIf clause
-							}
-						}
-					}
-					if (token.getType() == TokenType::kw_else)
-					{
-						token = *scanner_->nextToken();
-						ElseNode elseN;
-						std::vector<const StatementNode*> statementsElseN = statement_sequence();	// MOVES NEXT TOKEN
-						token = *scanner_->peekToken();
-						if (statementsElseN.size() > 0)
-						{
-							elseN.statements = statementsElseN;
-							isN.elseNode = &elseN;
-						}
-						else {
-							// SYNTAX ERROR: No statement in else clause
-						}
-					}
-					token = *scanner_->peekToken();
-					if (token.getType() == TokenType::kw_end)
-					{
-						scanner_->nextToken();
-						return &isN;
-					}
-					else {
-						// SYNTAX ERROR: "END" keyword is missing
-					}
-				}
-				else {
-					// SYNTAX ERROR: No statements in If clause
-				}
-			}
-			else {
-				// SYNTAX ERROR: "THEN" keyword is missing
-			}
-		}
-		else {
-			// SYNTAX ERROR: No valid expression
-		}
-	}
-	return nullptr;
-}
-
-const WhileStatementNode* Parser::while_statement() {
-	/*
-	"WHILE" expression "DO" StatementSequence "END"
-	*/
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::kw_while)
-	{
-		token = *scanner_->nextToken();
-		const ExpressionNode* eN = expression(); // MOVES NEXT TOKEN
-		if (eN != nullptr)
-		{
-			token = *scanner_->peekToken();
-			if (token.getType() == TokenType::kw_do)
-			{
-				token = *scanner_->nextToken();
-				std::vector<const StatementNode*> statements = statement_sequence();
-				if (statements.size() > 0)
-				{
-					token = *scanner_->peekToken();
-					if (token.getType() == TokenType::kw_end)
-					{
-						WhileStatementNode wsN;
-						wsN.expression = eN;
-						wsN.statements = statements;
-						return &wsN;
-					}
-					else {
-						// SYNTAX ERROR: "END" keyword is missing
-					}
-				}
-				else {
-					// SYNTAX ERROR: No statements in WHILE scope
-				}
-			}
-			else {
-				// SYNTAX ERROR: "DO" keywrod is missing in WHILE scope
-			}
-		}
-		else {
-			// SYNTAX ERROR: NO expression in WHILE condition
-		}
-	}
-	return nullptr;
-}
-
-const std::vector<const ExpressionNode*> Parser::actual_parameters() {
-	/*
-	"("
-	[expression
-		{ "," expression }				-> Repetition
-	]									-> Optional
-	")"
-	*/
-	std::vector<const ExpressionNode*> actualParameters;
-	Token token = *scanner_->peekToken();
-	if (token.getType() == TokenType::lparen)
-	{
-		token = *scanner_->nextToken();
-		const ExpressionNode* eN = expression();// MOVES NEXT TOKEN
-		if (eN != nullptr)						// Optinal
-		{
-			actualParameters.push_back(eN);
-			bool shouldRepeat = true;
-			while (shouldRepeat)				// Repetiton
-			{
-				token = *scanner_->peekToken();
-				if (token.getType() == TokenType::comma)
-				{
-					token = *scanner_->nextToken();
-					const ExpressionNode* exN = expression();
-					if (exN != nullptr)			// MOVES NEXT TOKEN
-					{
-						actualParameters.push_back(exN);
-					}
-					else {
-						// SYNTAX ERROR; No valid expression
-					}
+					actualParameters.push_back(exN);
 				}
 				else {
 					shouldRepeat = false;
+					// No valid expression after comma 
+					actualParameters.clear();
 				}
 			}
+			else {
+				shouldRepeat = false;
+			}
 		}
-		else {
-			token = *scanner_->peekToken();
-		}
-
-		if (token.getType() == TokenType::rparen)
-		{
-			*scanner_->nextToken();
-			return actualParameters;
-		}
-		else {
-			// SYNTAX ERROR: actual_parameters have to finish ")"
-		}
-	}
-	else {
-		// SYNTAX ERROR: actual_parameters have to start "("
 	}
 	return actualParameters;
 }
 
-const std::vector<const SelectorNode*> Parser::selector() {
-	/*
-	{"." ident | "[" expression "]"} -> repetition
-	*/
-	Token token = *scanner_->peekToken();
-	std::vector<const SelectorNode*> selectors;
+const IfStatement* Parser::if_statement() {
+	// "IF" expression "THEN" StatementSequence {"ELSIF" expression "THEN" StatementSequence} ["ELSE" StatementSequence] "END"
+	token_ = scanner_->nextToken().get();
+	IfStatement isN;
+	const Expression* eN = expression();
+	if (eN != nullptr && eN->type == ExpressionType::boolean)
+	{
+		isN.expression = eN;
+		if (token_->getType() == TokenType::kw_then)
+		{
+			token_ = scanner_->nextToken().get();
+			std::vector<const Statement*> statements = statement_sequence();
+			isN.statements = statements;
+			if (token_->getType() == TokenType::kw_elsif)
+			{
+				bool shouldProceed = true;
+				while (shouldProceed)
+				{
+					token_ = scanner_->nextToken().get();
+					ElseIf eiN;
+					const Expression* eN = expression();
+					if (eN != nullptr && eN->type == ExpressionType::boolean)
+					{
+						eiN.expression = eN;
+						if (token_->getType() == TokenType::kw_then) {
+							token_ = scanner_->nextToken().get();
+							std::vector<const Statement*> statementsEi = statement_sequence();
+							eiN.statements = statementsEi;
+							isN.elseIfNodes.push_back(&eiN);
+							if (token_->getType() != TokenType::kw_elsif)
+							{
+								shouldProceed = false;
+							}
+						}
+						else {
+							logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"THEN\" keyword is missing.");
+							shouldProceed = false;
+							return nullptr;
+						}
+					}
+					else {
+						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Expression type must be boolean.");
+						shouldProceed = false;
+						return nullptr;
+					}
+				}
+			}
+			if (token_->getType() == TokenType::kw_else)
+			{
+				token_ = scanner_->nextToken().get();
+				Else elseN;
+				std::vector<const Statement*> statementsElseN = statement_sequence();
+				elseN.statements = statementsElseN;
+				isN.elseNode = &elseN;
+			}
+			if (token_->getType() == TokenType::kw_end)
+			{
+				token_ = scanner_->nextToken().get();
+				return &isN;
+			}
+			else {
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
+			}
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"THEN\" keyword is missing.");
+		}
+	}
+	else {
+		logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Expression type must be boolean.");
+	}
+	return nullptr;
+}
+
+const WhileStatement* Parser::while_statement() {
+	// "WHILE" expression "DO" StatementSequence "END"
+	token_ = scanner_->nextToken().get();
+	const Expression* eN = expression();
+	if (eN != nullptr && eN->type == ExpressionType::boolean)
+	{
+		if (token_->getType() == TokenType::kw_do)
+		{
+			token_ = scanner_->nextToken().get();
+			std::vector<const Statement*> statements = statement_sequence();
+			if (token_->getType() == TokenType::kw_end)
+			{
+				token_ = scanner_->nextToken().get();
+				WhileStatement wsN;
+				wsN.expression = eN;
+				wsN.statements = statements;
+				return &wsN;
+			}
+			else {
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" is missing");
+			}
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"DO\" keyword is missing");
+		}
+	}
+	else {
+		logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Expression type must be boolean.");
+	}
+	return nullptr;
+}
+
+const std::vector<const Selector*> Parser::selector() {
+	// {"." ident | "[" expression "]"} -> repetition
+	std::vector<const Selector*> selectors;
 	bool shouldRepeat = true;
 	while (shouldRepeat)
 	{
-		if (token.getType() == TokenType::comma)
+		if (token_->getType() == TokenType::period)
 		{
-			token = *scanner_->nextToken();
-			if (token.getType() == TokenType::const_ident)
+			token_ = scanner_->nextToken().get();
+			std::string identifier = ident();
+			if (!identifier.empty())
 			{
-				const IdentSelectorNode identSelector(ident());
+				const IdentSelector identSelector(identifier);
 				selectors.push_back(&identSelector);
-				token = *scanner_->nextToken();
-				if (token.getType() != TokenType::comma || token.getType() != TokenType::lbrack)
+				token_ = scanner_->nextToken().get();
+				if (token_->getType() != TokenType::comma || token_->getType() != TokenType::lbrack)
 				{
 					shouldRepeat = false;
 				}
 			}
 			else {
-				// SYNTAX ERROR
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; Selector is not valid.");
 				shouldRepeat = false;
 			}
 		}
-		else if (token.getType() == TokenType::lbrack) {
-			token = *scanner_->nextToken();
-			const ExpressionNode* expressionNode = expression(); // MOVES NEXT TOKEN
+		else if (token_->getType() == TokenType::lbrack) {
+			token_ = scanner_->nextToken().get();
+			const Expression* expressionNode = expression();
 			if (expressionNode != nullptr)
 			{
-				const IndexSelectorNode indexSelector(expressionNode);
+				const IndexSelector indexSelector(expressionNode);
 				selectors.push_back(&indexSelector);
-				if (token.getType() == TokenType::rbrack)
+				if (token_->getType() == TokenType::rbrack)
 				{
-					token = *scanner_->nextToken();
-					if (token.getType() != TokenType::comma || token.getType() != TokenType::lbrack)
+					token_ = scanner_->nextToken().get();
+					if (token_->getType() != TokenType::comma || token_->getType() != TokenType::lbrack)
 					{
 						shouldRepeat = false;
 					}
 				}
 				else {
 					shouldRepeat = false;
-					// SYNTAX ERROR
+					logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"]\" is missing");
 				}
 			}
 			else {
-				// SYNTAX ERROR
+				shouldRepeat = false;
 			}
 		}
 		else {
-			// SYNTAX ERROR
 			shouldRepeat = false;
 		}
 	}

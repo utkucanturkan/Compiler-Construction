@@ -6,13 +6,38 @@
 #define OBERON0C_PARSER_H
 
 
-#include "../scanner/Scanner.h"
+#include "Scanner.h"
 #include "ast/Node.h"
-#include "ast/ModuleNode.h"
-#include "ast/ConstDeclarationNode.h"
-#include "ast/TypeDeclarationNode.h"
-#include "ast/VarDeclarationNode.h"
-#include "ast/ProcedureDeclarationNode.h"
+
+#include <ast\Module\Module.h>
+
+#include <ast\Declaration\Declaration.h>
+#include <ast\Declaration\ConstDeclaration.h>
+#include <ast\Declaration\TypeDeclaration.h>
+#include <ast\Declaration\VarDeclaration.h>
+#include <ast\Declaration\ProcedureDeclaration.h>
+
+#include <ast\Expression\Expression.h>
+#include <ast\Expression\SimpleExpression.h>
+#include <ast\Expression\Term.h>
+#include <ast\Expression\Factor.h>
+
+#include <ast\Type\Type.h>
+#include <ast\Type\ArrayType.h>
+#include <ast\Type\RecordType.h>
+#include <ast\Type\FieldList.h>
+
+#include <ast\Procedure\ProcedureHeading.h>
+#include <ast\Procedure\ProcedureBody.h>
+#include <ast\Procedure\FormalParameter.h>
+
+#include <ast\Statement\Statement.h>
+#include <ast\Statement\AssignmentStatement.h>
+#include <ast\Statement\ProcedureCallStatement.h>
+#include <ast\Statement\IfStatement.h>
+#include <ast\Statement\WhileStatement.h>
+
+#include <ast\Selector\Selector.h>
 
 class Parser
 {
@@ -20,36 +45,37 @@ class Parser
 private:
     Scanner *scanner_;
     Logger *logger_;
+    const Token* token_;
 
     const std::string ident();
 
-    const ModuleNode* module();
-    const std::vector<const DeclarationNode*> declarations();
-    const std::vector<const ConstDeclarationNode*> const_declarations();
-    const std::vector<const TypeDeclarationNode*> type_declarations();
-    const std::vector<const VarDeclarationNode*> var_declarations();
-    const ProcedureDeclarationNode* procedure_declaration();
-    const ExpressionNode* expression();
-    const SimpleExpressionNode* simple_expression();
-    const TermNode* term();
-    const FactorNode* factor();
-    const TypeNode* type();
-    const ArrayTypeNode* array_type();
-    const RecordTypeNode* record_type();
-    const FieldListNode* field_list();
+    const Module* module();
+    const std::vector<const Declaration*> declarations();
+    const std::vector<const ConstDeclaration*> const_declarations();
+    const std::vector<const TypeDeclaration*> type_declarations();
+    const std::vector<const VarDeclaration*> var_declarations();
+    const ProcedureDeclaration* procedure_declaration();
+    const Expression* expression();
+    const SimpleExpression* simple_expression();
+    const Term* term();
+    const Factor* factor();
+    const Type* type();
+    const ArrayType* array_type();
+    const RecordType* record_type();
+    const FieldList* field_list();
     const std::vector<const std::string> ident_list();
-    const ProcedureHeadingNode* procedure_heading();
-    const ProcedureBodyNode* procedure_body();
-    const std::vector<const FormalParameterNode*> formal_parameters();
-    const FormalParameterNode* fp_section();
-    const std::vector<const StatementNode*> statement_sequence();
-    const StatementNode* statement();
-    const AssignmentStatementNode* assignment();
-    const ProcedureCallStatementNode* procedure_call();
-    const IfStatementNode* if_statement();
-    const WhileStatementNode* while_statement();
-    const std::vector<const ExpressionNode*> actual_parameters();
-    const std::vector<const SelectorNode*> selector();
+    const ProcedureHeading* procedure_heading();
+    const ProcedureBody* procedure_body();
+    const std::vector<const FormalParameter*> formal_parameters();
+    const FormalParameter* fp_section();
+    const std::vector<const Statement*> statement_sequence();
+    const Statement* statement();
+    const AssignmentStatement* assignment();
+    const ProcedureCallStatement* procedure_call();
+    const IfStatement* if_statement();
+    const WhileStatement* while_statement();
+    const std::vector<const Expression*> actual_parameters();
+    const std::vector<const Selector*> selector();
 
 public:
     explicit Parser(Scanner *scanner, Logger *logger);

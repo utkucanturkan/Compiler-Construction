@@ -1,4 +1,4 @@
-#include "../parser/ast/Node.h"
+#include "ast/Node.h"
 
 Node::Node(NodeType nodeType, FilePos pos) :nodeType_(nodeType), pos_(pos) {
 
