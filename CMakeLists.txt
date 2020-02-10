@@ -21,43 +21,7 @@ add_executable(oberon0c
         util/Logger.cpp
         util/Logger.h                 
         parser/Parser.cpp
-        parser/Parser.h
+        parser/Parser.h        
         parser/ast/Node.h
-        parser/ast/Node.cpp
-        parser/ast/Module/Module.h
-        parser/ast/Module/Module.cpp
-        parser/ast/Declaration/Declaration.h
-        parser/ast/Declaration/ConstDeclaration.h
-        parser/ast/Declaration/TypeDeclaration.h
-        parser/ast/Declaration/VarDeclaration.h
-        parser/ast/Declaration/ProcedureDeclaration.h
-        parser/ast/Procedure/ProcedureHeading.h
-        parser/ast/Procedure/ProcedureBody.h
-        parser/ast/Procedure/FormalParameter.h
-        parser/ast/Expression/Expression.h
-        parser/ast/Expression/SimpleExpression.h
-        parser/ast/Expression/SimpleExpressionElement.h
-        parser/ast/Expression/Term.h
-        parser/ast/Expression/TermElement.h
-        parser/ast/Expression/Factor.h
-        parser/ast/Expression/NotFactor.h
-        parser/ast/Expression/ExpressionFactor.h
-        parser/ast/Expression/IdentSelectorFactor.h
-        parser/ast/Expression/NumberFactor.h
-        parser/ast/Expression/StringFactor.h
-        parser/ast/Selector/Selector.h
-        parser/ast/Selector/IdentSelector.h
-        parser/ast/Selector/IndexSelector.h
-        parser/ast/Type/Type.h
-        parser/ast/Type/ArrayType.h
-        parser/ast/Type/RecordType.h
-        parser/ast/Type/IdentType.h
-        parser/ast/Type/FieldList.h
-        parser/ast/Statement/Statement.h
-        parser/ast/Statement/AssignmentStatement.h
-        parser/ast/Statement/IfStatement.h
-        parser/ast/Statement/ElseIf.h
-        parser/ast/Statement/Else.h
-        parser/ast/Statement/WhileStatement.h
-        parser/ast/Statement/ProcedureCallStatement.h
+        parser/ast/Node.cpp       
         main.cpp)

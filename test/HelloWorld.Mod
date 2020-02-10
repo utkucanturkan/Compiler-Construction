@@ -1,6 +1,6 @@
 MODULE HelloWorld;
 
-CONST Message = "Hello World!\n";
+CONST condition = TRUE;
 
 BEGIN
 	Write(Message);
