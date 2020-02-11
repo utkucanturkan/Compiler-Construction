@@ -341,18 +341,30 @@ std::shared_ptr<const Expression> Parser::expression() {
 			auto rhs = simple_expression();
 			if (rhs != nullptr)
 			{
-				return std::shared_ptr<const Expression>(new Expression(lhs, operand, rhs));
+				if (lhs->type == rhs->type)
+				{
+					if ((operand == TokenType::op_lt || operand == TokenType::op_leq || operand == TokenType::op_gt || operand == TokenType::op_geq) && lhs->type != PrimitiveType::Number)
+					{
+						// SEMANTIC ERROR; "<" | "<=" | ">" | ">=" should be with numbers
+					}
+					else {
+						return std::make_shared<const Expression>(lhs, operand, rhs);
+					}
+				}
+				else {
+					// SEMANTIC ERROR; lhs andn rhs type should be same
+				}
 			}
 			else {
-				// No rhs simple expression
+				// SYNTAX ERROR; No rhs simple expression
 			}
 		}
 		else {
-			return std::shared_ptr<const Expression>(new Expression(lhs));
+			return std::make_shared<const Expression>(lhs);
 		}
 	}
 	else {
-		// No simple Expression
+		// SYNTAX ERROR; No simple Expression
 	}
 	return nullptr;
 }
@@ -420,7 +432,7 @@ std::shared_ptr<const Term> Parser::term() {
 	if (_factor != nullptr)
 	{
 		auto term = std::make_shared<Term>();
-		term->type = _factor->type;		
+		term->type = _factor->type;
 		auto operand = TokenType::null;
 		bool shouldRepeat = true;
 		while (shouldRepeat)
@@ -508,11 +520,11 @@ std::shared_ptr<const Factor> Parser::factor() {
 					}
 				}
 				else {
-					// The expression should be number
+					// SEMANTIC ERROR; The expression should be number
 				}
 			}
 			else {
-				// No expression
+				// SYNTAX ERROR; No expression
 			}
 		}
 		else if (token_->getType() == TokenType::op_not) {
@@ -546,70 +558,145 @@ std::shared_ptr<const Type> Parser::type() {
 	{
 		// INTEGER - CHAR - BOOLEAN - LONGINT
 		token_ = scanner_->nextToken();
+		PrimitiveType primitiveType;
+		if (name == "INTEGER" || name == "LONGINT")
+		{
+			primitiveType = PrimitiveType::Number;
+		}
+		else if (name == "CHAR") {
+			primitiveType = PrimitiveType::String;
+		}
+		else if (name == "BOOLEAN") {
+			primitiveType = PrimitiveType::Boolean;
+		}
+		return std::make_shared<Type>(primitiveType);
 	}
 	else if (token_->getType() == TokenType::kw_array) {
-		array_type();
+		return array_type();
 	}
 	else if (token_->getType() == TokenType::kw_record) {
-		record_type();
+		return record_type();
 	}
 	logger_->error(token_->getPosition(), "- SYNTAX ERROR; type is not valid.");
 	return nullptr;
 }
 
-const Node* Parser::array_type() {
+std::shared_ptr<const ArrayType> Parser::array_type() {
 	// "ARRAY" expression "OF" type.
 	token_ = scanner_->nextToken();
-	expression();
-	if (token_->getType() == TokenType::kw_of)
+	auto _expression = expression();
+	if (_expression != nullptr)
 	{
-		token_ = scanner_->nextToken();
-		type();
-	}
-	else {
-		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"OF\" keyword is missing.");
-	}
-	return nullptr;
-}
-
-const Node* Parser::record_type() {
-	// "RECORD" FieldList {";" FieldList} "END"
-	token_ = scanner_->nextToken();
-	field_list();
-	bool shouldRepeat = true;
-	while (shouldRepeat)
-	{
-		if (token_->getType() != TokenType::semicolon)
+		// control from sysbol table id the expression is variablefactor and constant
+		if (_expression->type == PrimitiveType::Number)
 		{
-			token_ = scanner_->nextToken();
-			field_list();
+			if (token_->getType() == TokenType::kw_of)
+			{
+				token_ = scanner_->nextToken();
+				auto _type = type();
+				if (_type != nullptr)
+				{
+					return std::make_shared<const ArrayType>(_expression, _type);
+				}
+				else {
+					// ERROR: no type
+					return nullptr;
+				}
+			}
+			else {
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"OF\" keyword is missing.");
+			}
 		}
 		else {
-			shouldRepeat = false;
+			// Error: SEMANTIC invalid array dimension
+			return nullptr;
 		}
 	}
-	if (token_->getType() == TokenType::kw_end)
+	else {
+		// No expression
+		return nullptr;
+	}
+}
+
+std::shared_ptr<const RecordType> Parser::record_type() {
+	// "RECORD" FieldList {";" FieldList} "END"
+	token_ = scanner_->nextToken();
+	std::vector<std::shared_ptr<const Variable>> fieldList = field_list();
+	if (fieldList.size() != 0)
 	{
-		token_ = scanner_->nextToken();
+		auto record = std::make_shared<RecordType>();
+		// Adding the fields to the record
+		for (auto& field : fieldList) {
+			record->fieldListNodes.emplace_back(field);
+		}
+		bool shouldRepeat = true;
+		while (shouldRepeat)
+		{
+			if (token_->getType() != TokenType::semicolon)
+			{
+				token_ = scanner_->nextToken();
+				fieldList = field_list();
+				for (auto& field : fieldList) {
+					for (auto& recordField : record->fieldListNodes) {
+						if (field->identifier == recordField->identifier)
+						{
+							// ERROR: SEMANTIC; parameter identifier has been used in record scope
+							shouldRepeat = false;
+							return nullptr;
+						}
+					}
+					record->fieldListNodes.emplace_back(field);
+				}
+			}
+			else {
+				shouldRepeat = false;
+			}
+		}
+		if (token_->getType() == TokenType::kw_end)
+		{
+			token_ = scanner_->nextToken();
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
+		}
 	}
 	else {
-		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
+		// ERROR: SYNTAX; A record has to have at least one parameter
 	}
 	return nullptr;
 }
 
-const Node* Parser::field_list() {
+const std::vector<std::shared_ptr<const Variable>> Parser::field_list() {
 	// [IdentList ":" type] -> optional
-	ident_list();
+	// Record has own scope
+	std::vector<std::shared_ptr<const Variable>> fieldList;
+	const std::vector<std::string> identList = ident_list();
 	if (token_->getType() == TokenType::colon)
 	{
 		token_ = scanner_->nextToken();
-		type();
+		auto _type = type();
+		if (_type != nullptr)
+		{
+			for (auto& identifier : identList) {
+				for (auto& field : fieldList) {
+					if (identifier == field->identifier)
+					{
+						// ERROR: SEMANTIC; identifier has been used already
+						fieldList.clear();
+						return fieldList;
+					}
+					fieldList.emplace_back(std::make_shared<const Variable>(identifier, _type));
+				}
+			}
+		}
+		else {
+			// ERROR: SYNTAX; No type
+		}
 	}
 	else {
 		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \":\" is missing");
 	}
-	return nullptr;
+	return fieldList;
 }
 
 const std::vector<std::string> Parser::ident_list() {
@@ -764,14 +851,14 @@ const std::vector<std::shared_ptr<const Statement>> Parser::statement_sequence()
 	return statementList;
 }
 
-const Node* Parser::statement() {
+std::shared_ptr<const Statement> Parser::statement() {
 	// [assignment | ProcedureCall | IfStatement | WhileStatement]
 	if (token_->getType() == TokenType::kw_if)
 	{
-		if_statement();
+		return if_statement();
 	}
 	else if (token_->getType() == TokenType::kw_while) {
-		while_statement();
+		return while_statement();
 	}
 	else {
 		//std::string name = ident();
@@ -860,73 +947,131 @@ const Node* Parser::actual_parameters() {
 	return nullptr;
 }
 
-const Node* Parser::if_statement() {
+std::shared_ptr<const IfStatement> Parser::if_statement() {
 	// "IF" expression "THEN" StatementSequence {"ELSIF" expression "THEN" StatementSequence} ["ELSE" StatementSequence] "END"
 	token_ = scanner_->nextToken();
-	expression();
-	if (token_->getType() == TokenType::kw_then)
+	auto _expression = expression();
+	if (_expression != nullptr)
 	{
-		token_ = scanner_->nextToken();
-		statement_sequence();
-		if (token_->getType() == TokenType::kw_elsif)
+		if (_expression->type != PrimitiveType::Boolean)
 		{
-			bool shouldProceed = true;
-			while (shouldProceed)
+			if (token_->getType() == TokenType::kw_then)
 			{
+				auto ifStatement = std::make_shared<IfStatement>(_expression);
 				token_ = scanner_->nextToken();
-				expression();
-				if (token_->getType() == TokenType::kw_then) {
-					token_ = scanner_->nextToken();
-					statement_sequence();
-					if (token_->getType() != TokenType::kw_elsif)
+				const std::vector<std::shared_ptr<const Statement>> statementList = statement_sequence();
+				for (auto _statement : statementList) {
+					ifStatement->statements.emplace_back(_statement);
+				}
+				if (token_->getType() == TokenType::kw_elsif)
+				{
+					bool shouldProceed = true;
+					while (shouldProceed)
 					{
-						shouldProceed = false;
+						token_ = scanner_->nextToken();
+						auto _innerExpression = expression();
+						if (_expression != nullptr)
+						{
+							if (_expression->type != PrimitiveType::Boolean)
+							{
+								if (token_->getType() == TokenType::kw_then) {
+									auto elseIfStatement = std::make_shared<ElseIf>(_innerExpression);
+									token_ = scanner_->nextToken();
+									const std::vector<std::shared_ptr<const Statement>> innerStatementList = statement_sequence();
+									for (auto _innerStatement : statementList) {
+										elseIfStatement->statements.emplace_back(_innerStatement);
+									}
+									ifStatement->elseIfNodes.emplace_back(elseIfStatement);
+									if (token_->getType() != TokenType::kw_elsif)
+									{
+										shouldProceed = false;
+									}
+								}
+								else {
+									logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"THEN\" keyword is missing.");
+									shouldProceed = false;
+									return nullptr;
+								}
+							}
+							else {
+								// expression is not boolean type
+								return nullptr;
+							}
+						}
+						else {
+							// No expression in else if block
+							return nullptr;
+						}
+						
 					}
 				}
+				if (token_->getType() == TokenType::kw_else)
+				{
+					token_ = scanner_->nextToken();
+					auto elseStatement = std::make_shared<Else>();
+					const std::vector<std::shared_ptr<const Statement>> innerStatementList = statement_sequence();
+					for (auto _innerStatement : statementList) {
+						elseStatement->statements.emplace_back(_innerStatement);
+					}
+					ifStatement->elseNode = elseStatement;
+				}
+				if (token_->getType() == TokenType::kw_end)
+				{
+					token_ = scanner_->nextToken();
+				}
 				else {
-					logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"THEN\" keyword is missing.");
-					shouldProceed = false;
-					return nullptr;
+					logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
 				}
 			}
-		}
-		if (token_->getType() == TokenType::kw_else)
-		{
-			token_ = scanner_->nextToken();
-			statement_sequence();
-		}
-		if (token_->getType() == TokenType::kw_end)
-		{
-			token_ = scanner_->nextToken();
+			else {
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"THEN\" keyword is missing.");
+			}
 		}
 		else {
-			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
+			// expression is not boolean
 		}
 	}
 	else {
-		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"THEN\" keyword is missing.");
+		// No expression
 	}
 	return nullptr;
 }
 
-const Node* Parser::while_statement() {
+std::shared_ptr<const WhileStatement> Parser::while_statement() {
 	// "WHILE" expression "DO" StatementSequence "END"
 	token_ = scanner_->nextToken();
-	expression();
-	if (token_->getType() == TokenType::kw_do)
+	auto _expression = expression();
+	if (_expression != nullptr)
 	{
-		token_ = scanner_->nextToken();
-		statement_sequence();
-		if (token_->getType() == TokenType::kw_end)
+		if (_expression->type == PrimitiveType::Boolean)
 		{
-			token_ = scanner_->nextToken();
+			if (token_->getType() == TokenType::kw_do)
+			{
+				auto whileStatement = std::make_shared<WhileStatement>(_expression);
+				token_ = scanner_->nextToken();
+				const std::vector<std::shared_ptr<const Statement>> statementList = statement_sequence();
+				for (auto statement : statementList) {
+					whileStatement->statements.emplace_back(statement);
+				}
+				if (token_->getType() == TokenType::kw_end)
+				{
+					token_ = scanner_->nextToken();
+					return whileStatement;
+				}
+				else {
+					logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" is missing");
+				}
+			}
+			else {
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"DO\" keyword is missing");
+			}
 		}
 		else {
-			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" is missing");
+			// expression is not boolean
 		}
 	}
 	else {
-		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"DO\" keyword is missing");
+		// No valid expression
 	}
 	return nullptr;
 }

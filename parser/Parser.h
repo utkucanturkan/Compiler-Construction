@@ -19,6 +19,10 @@
 #include "Module.h"
 #include "Expression.h"
 #include "Statement.h"
+#include "ArrayType.h"
+#include "RecordType.h"
+#include "IfStatement.h"
+#include "WhileStatement.h"
 
 class Parser
 {
@@ -41,20 +45,20 @@ private:
     std::shared_ptr<const Term> term();
     std::shared_ptr<const Factor> factor();
     std::shared_ptr<const Type> type();
-    const Node* array_type();
-    const Node* record_type();
-    const Node* field_list();
+    std::shared_ptr<const ArrayType> array_type();
+    std::shared_ptr<const RecordType> record_type();
+    const std::vector<std::shared_ptr<const Variable>> field_list();
     const std::vector<std::string> ident_list();
     const Node* procedure_heading();
     const Node* procedure_body();
     const Node* formal_parameters();
     const Node* fp_section();
     const std::vector<std::shared_ptr<const Statement>> statement_sequence();
-    const Node* statement();
+    std::shared_ptr<const Statement> statement();
     const Node* assignment();
     const Node* procedure_call();
-    const Node* if_statement();
-    const Node* while_statement();
+    std::shared_ptr<const IfStatement> if_statement();
+    std::shared_ptr<const WhileStatement> while_statement();
     const Node* actual_parameters();
     const Node* selector();
 

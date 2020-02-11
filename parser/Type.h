@@ -2,7 +2,8 @@
 
 enum class PrimitiveType
 {
-	Null,
+	Array,
+	Record,
 	Number,
 	String,
 	Boolean

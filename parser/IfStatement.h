@@ -15,7 +15,7 @@ public:
 
 class ElseIf {
 public:
-	explicit ElseIf();
+	explicit ElseIf(std::shared_ptr<const Expression> _expression);
 	std::shared_ptr<const Expression> expression;
 	std::vector<std::shared_ptr<const Statement>> statements;
 };

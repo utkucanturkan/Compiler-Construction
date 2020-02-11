@@ -2,8 +2,8 @@
 #include "ArrayType.h"
 #include "RecordType.h"
 
-Type::Type(PrimitiveType _primitiveType = PrimitiveType::Null): primitiveType(_primitiveType) { }
+Type::Type(PrimitiveType _primitiveType): primitiveType(_primitiveType) { }
 
-ArrayType::ArrayType(std::shared_ptr<const Expression> _expression, std::shared_ptr<const Type> _type): Type(), expression(_expression), type(_type) { }
+ArrayType::ArrayType(std::shared_ptr<const Expression> _expression, std::shared_ptr<const Type> _type): Type(PrimitiveType::Array), expression(_expression), type(_type) { }
 
-RecordType::RecordType(): Type() {}
+RecordType::RecordType(): Type(PrimitiveType::Record) {}

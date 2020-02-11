@@ -12,6 +12,6 @@ WhileStatement::WhileStatement(std::shared_ptr<const Expression> _expression) : 
 
 IfStatement::IfStatement(std::shared_ptr<const Expression> _expression): expression(_expression) { }
 
-ElseIf::ElseIf() {}
+ElseIf::ElseIf(std::shared_ptr<const Expression> _expression): expression(_expression) {}
 
 Else::Else() {}
