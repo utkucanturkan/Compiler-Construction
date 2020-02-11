@@ -2,7 +2,7 @@
 
 Module::Module(std::string _identifier) : identifier(_identifier) { }
 
-bool Module::addDeclaration(std::shared_ptr<const Variable> declaration) {
+void Module::addDeclaration(std::shared_ptr<const Variable> declaration) {
 	for (auto& d : declarations)
 	{
 		if (d->identifier == declaration->identifier)

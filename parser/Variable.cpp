@@ -17,3 +17,7 @@ TypeVariable::TypeVariable(std::string _identifier, std::shared_ptr<const Type> 
 VarVariable::VarVariable(std::string _identifier, std::shared_ptr<const Type> _type) : Variable(_identifier), type(_type) { }
 
 ProcedureVariable::ProcedureVariable(std::string _identifier) : Variable(_identifier) { }
+
+ProcedureHead::ProcedureHead(std::string _identifier) : identifier(_identifier) { }
+
+ProcedureBody::ProcedureBody() { }

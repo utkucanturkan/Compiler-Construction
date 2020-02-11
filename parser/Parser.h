@@ -49,9 +49,9 @@ private:
     std::shared_ptr<const RecordType> record_type();
     const std::vector<std::shared_ptr<const Variable>> field_list();
     const std::vector<std::string> ident_list();
-    const Node* procedure_heading();
-    const Node* procedure_body();
-    const Node* formal_parameters();
+    std::shared_ptr<const ProcedureHead> procedure_heading();
+    std::shared_ptr<const ProcedureBody> procedure_body();
+    const std::vector<std::shared_ptr<const Variable>> formal_parameters();
     const Node* fp_section();
     const std::vector<std::shared_ptr<const Statement>> statement_sequence();
     std::shared_ptr<const Statement> statement();

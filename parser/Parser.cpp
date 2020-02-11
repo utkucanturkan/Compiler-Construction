@@ -62,10 +62,7 @@ std::unique_ptr<const Module> Parser::module()
 				if (token_->getType() == TokenType::kw_begin)
 				{
 					token_ = scanner_->nextToken();
-					for (auto& statement : statement_sequence()) {
-						_module.get()->addStatement(statement);
-						logger_->info("", "A statement is added to " + identifier + " Module.");
-					}
+					_module->statements = statement_sequence();
 				}
 				if (token_->getType() == TokenType::kw_end)
 				{
@@ -316,14 +313,31 @@ const std::vector<std::shared_ptr<const VarVariable>> Parser::var_declarations()
 
 std::shared_ptr<const ProcedureVariable> Parser::procedure_declaration() {
 	// ProcedureHeading ";" ProcedureBody
-	procedure_heading();
-	if (token_->getType() == TokenType::semicolon)
+	auto head = procedure_heading();
+	if (head != nullptr)
 	{
-		token_ = scanner_->nextToken();
-		procedure_body();
+		if (token_->getType() == TokenType::semicolon)
+		{
+			token_ = scanner_->nextToken();
+			auto body = procedure_body();
+			if (body != nullptr)
+			{
+				auto procedure = std::make_shared<ProcedureVariable>(head->identifier);
+				procedure->parameters = head->parameters;
+				procedure->declarations = body->declarations;
+				procedure->statements = body->statements;
+				return procedure;
+			}
+			else {
+				logger_->error(token_->getPosition(), "- SYNTAX ERROR; No valid procedure body");
+			}
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \";\" is missing");
+		}
 	}
 	else {
-		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \";\" is missing");
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; No valid procedure head");
 	}
 	return nullptr;
 }
@@ -625,7 +639,6 @@ std::shared_ptr<const RecordType> Parser::record_type() {
 	if (fieldList.size() != 0)
 	{
 		auto record = std::make_shared<RecordType>();
-		// Adding the fields to the record
 		for (auto& field : fieldList) {
 			record->fieldListNodes.emplace_back(field);
 		}
@@ -640,12 +653,17 @@ std::shared_ptr<const RecordType> Parser::record_type() {
 					for (auto& recordField : record->fieldListNodes) {
 						if (field->identifier == recordField->identifier)
 						{
-							// ERROR: SEMANTIC; parameter identifier has been used in record scope
-							shouldRepeat = false;
-							return nullptr;
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; " + field->identifier + " has been used in the record scope");
+							shouldRepeat = false;					
+						}
+						else {
+							record->fieldListNodes.emplace_back(field);
 						}
 					}
-					record->fieldListNodes.emplace_back(field);
+				}
+				if (shouldRepeat == false)
+				{
+					return nullptr;
 				}
 			}
 			else {
@@ -661,14 +679,13 @@ std::shared_ptr<const RecordType> Parser::record_type() {
 		}
 	}
 	else {
-		// ERROR: SYNTAX; A record has to have at least one parameter
+		logger_->error(token_->getPosition(), "- SYNTAX ERROR; A record has to have at least one parameter.");
 	}
 	return nullptr;
 }
 
 const std::vector<std::shared_ptr<const Variable>> Parser::field_list() {
 	// [IdentList ":" type] -> optional
-	// Record has own scope
 	std::vector<std::shared_ptr<const Variable>> fieldList;
 	const std::vector<std::string> identList = ident_list();
 	if (token_->getType() == TokenType::colon)
@@ -681,7 +698,8 @@ const std::vector<std::shared_ptr<const Variable>> Parser::field_list() {
 				for (auto& field : fieldList) {
 					if (identifier == field->identifier)
 					{
-						// ERROR: SEMANTIC; identifier has been used already
+						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; " + field->identifier + " has been used in the record scope");
+						// !!!!!!
 						fieldList.clear();
 						return fieldList;
 					}
@@ -690,7 +708,7 @@ const std::vector<std::shared_ptr<const Variable>> Parser::field_list() {
 			}
 		}
 		else {
-			// ERROR: SYNTAX; No type
+			logger_->error(token_->getPosition(), "- SYNTAX ERROR; No valid type for field list");
 		}
 	}
 	else {
@@ -730,14 +748,17 @@ const std::vector<std::string> Parser::ident_list() {
 	return identList;
 }
 
-const Node* Parser::procedure_heading() {
+std::shared_ptr<const ProcedureHead> Parser::procedure_heading() {
 	// "PROCEDURE" ident [FormalParameters]
 	token_ = scanner_->nextToken();
-	std::string name = ident();
-	if (!name.empty())
+	std::string identifier = ident();
+	if (!identifier.empty())
 	{
 		token_ = scanner_->nextToken();
-		formal_parameters();
+		auto procedureHead = std::make_shared<ProcedureHead>(identifier);
+		for (auto _variable : formal_parameters()) {
+			procedureHead->parameters.emplace_back(_variable);
+		}
 	}
 	else {
 		logger_->error(token_->getPosition(), "- SYNTAX ERROR; Procedure name is not valid.");
@@ -745,13 +766,22 @@ const Node* Parser::procedure_heading() {
 	return nullptr;
 }
 
-const Node* Parser::procedure_body() {
+std::shared_ptr<const ProcedureBody> Parser::procedure_body() {
 	// declarations ["BEGIN" StatementSequence] "END" ident
-	declarations();
+
+	auto body = std::make_shared<ProcedureBody>();
+	const std::vector<std::shared_ptr<const Variable>> variableDeclarations = declarations();
+	for (auto declaration : variableDeclarations) {
+		//for (auto innerDeclaration : variableDeclarations) {
+
+		//}
+		// !!!!!!
+	}
 	if (token_->getType() == TokenType::kw_begin)
 	{
 		token_ = scanner_->nextToken();
-		statement_sequence();
+		const std::vector<std::shared_ptr<const Statement>> statementSequence = statement_sequence();
+		body->statements = statementSequence;
 	}
 	if (token_->getType() == TokenType::kw_end)
 	{
@@ -771,8 +801,9 @@ const Node* Parser::procedure_body() {
 	return nullptr;
 }
 
-const Node* Parser::formal_parameters() {
+const std::vector<std::shared_ptr<const Variable>> Parser::formal_parameters() {
 	// "(" [FPSection {";" FPSection} ] ")"
+	const std::vector<std::shared_ptr<const Variable>> formalParameters;
 	if (token_->getType() == TokenType::lparen)
 	{
 		token_ = scanner_->nextToken();
@@ -800,7 +831,7 @@ const Node* Parser::formal_parameters() {
 	else {
 		logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"(\" is missing.");
 	}
-	return nullptr;
+	return formalParameters;
 }
 
 const Node* Parser::fp_section() {
@@ -1002,7 +1033,7 @@ std::shared_ptr<const IfStatement> Parser::if_statement() {
 							// No expression in else if block
 							return nullptr;
 						}
-						
+
 					}
 				}
 				if (token_->getType() == TokenType::kw_else)
