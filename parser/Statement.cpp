@@ -4,9 +4,9 @@
 #include "IfStatement.h"
 #include "ProcedureCallStatement.h"
 
-AssignmentStatement::AssignmentStatement(std::shared_ptr<const Variable> _variable, std::shared_ptr<const Expression> _expression) : expression(_expression), variable(_variable) { }
+AssignmentStatement::AssignmentStatement(std::shared_ptr<const Expression> _expression) : expression(_expression) { }
 
-ProcedureCallStatement::ProcedureCallStatement(std::shared_ptr<const Variable> _variable): variable(_variable) {}
+ProcedureCallStatement::ProcedureCallStatement() {}
 
 WhileStatement::WhileStatement(std::shared_ptr<const Expression> _expression) : expression(_expression) {}
 

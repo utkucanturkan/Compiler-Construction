@@ -8,7 +8,8 @@ Variable::Variable(std::string _identifier) : identifier(_identifier) { }
 
 Variable::Variable(std::string _identifier, std::shared_ptr<const Type> _type) : identifier(_identifier), type(_type) { }
 
-ConstVariable::ConstVariable(std::string _identifier, std::shared_ptr<const Expression> _expression) : Variable(_identifier), expression(_expression) { 
+
+ConstVariable::ConstVariable(std::string _identifier, std::shared_ptr<const Expression> _expression) : Variable(_identifier), expression(_expression) {
 	primitiveType = _expression->type;
 }
 

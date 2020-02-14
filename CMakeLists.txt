@@ -21,7 +21,44 @@ add_executable(oberon0c
         util/Logger.cpp
         util/Logger.h                 
         parser/Parser.cpp
-        parser/Parser.h        
+        parser/Parser.h   
+        parser/SymbolTable.h
+        parser/SymbolTable.cpp
+        parser/Type.h
+        parser/Type.cpp
+        parser/ArrayType.h
+        parser/RecordType.h
+        parser/Statement.h        
+        parser/Statement.cpp
+        parser/AssignmentStatement.h
+        parser/ProcedureCallStatement.h
+        parser/IfStatement.h
+        parser/WhileStatement.h
+        parser/Factor.h
+        parser/Factor.cpp
+        parser/BooleanFactor.h
+        parser/NotFactor.h
+        parser/NumberFactor.h
+        parser/StringFactor.h
+        parser/ExpressionFactor.h
+        parser/VariableFactor.h
+        parser/Variable.h
+        parser/Variable.cpp
+        parser/ConstVariable.h
+        parser/ProcedureVariable.h
+        parser/TypeVariable.h
+        parser/VarVariable.h
+        parser/Expression.h
+        parser/Expression.cpp
+        parser/SimpleExpression.h
+        parser/SimpleExpressionElement.h
+        parser/Term.h
+        parser/TermElement.h
+        parser/Selector.h
+        parser/Selector.cpp
+        parser/RecordSelector.h
+        parser/Module.h
+        parser/Module.cpp        
         parser/ast/Node.h
         parser/ast/Node.cpp       
         main.cpp)

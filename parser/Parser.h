@@ -9,20 +9,28 @@
 #include "Scanner.h"
 #include "ast/Node.h"
 
-#include "Type.h"
-#include "Factor.h"
 #include "Variable.h"
 #include "ConstVariable.h"
 #include "TypeVariable.h"
 #include "VarVariable.h"
 #include "ProcedureVariable.h"
 #include "Module.h"
+
 #include "Expression.h"
-#include "Statement.h"
+#include "Factor.h"
+
+#include "Type.h"
 #include "ArrayType.h"
 #include "RecordType.h"
+
+#include "Statement.h"
 #include "IfStatement.h"
 #include "WhileStatement.h"
+#include "AssignmentStatement.h"
+#include "ProcedureCallStatement.h"
+
+#include "Selector.h"
+#include "SymbolTable.h"
 
 class Parser
 {
@@ -31,6 +39,7 @@ private:
     Scanner *scanner_;
     Logger *logger_;
     std::unique_ptr<const Token> token_;
+    std::string scope;
 
     const std::string ident();
 
@@ -50,17 +59,17 @@ private:
     const std::vector<std::shared_ptr<const Variable>> field_list();
     const std::vector<std::string> ident_list();
     std::shared_ptr<const ProcedureHead> procedure_heading();
-    std::shared_ptr<const ProcedureBody> procedure_body();
+    std::shared_ptr<const ProcedureBody> procedure_body(const std::string _procedureIdentifier);
     const std::vector<std::shared_ptr<const Variable>> formal_parameters();
-    const Node* fp_section();
+    const std::vector<std::shared_ptr<const Variable>> fp_section();
     const std::vector<std::shared_ptr<const Statement>> statement_sequence();
     std::shared_ptr<const Statement> statement();
-    const Node* assignment();
-    const Node* procedure_call();
+    std::shared_ptr<const AssignmentStatement> assignment();
+    std::shared_ptr<const ProcedureCallStatement> procedure_call();
     std::shared_ptr<const IfStatement> if_statement();
     std::shared_ptr<const WhileStatement> while_statement();
-    const Node* actual_parameters();
-    const Node* selector();
+    const std::vector<std::shared_ptr<const Expression>> actual_parameters();
+    const std::shared_ptr<const Selector>  selector();
 
 public:
     explicit Parser(Scanner *scanner, Logger *logger);

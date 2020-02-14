@@ -9,7 +9,7 @@
 
 class AssignmentStatement : public Statement {
 public:
-	explicit AssignmentStatement(std::shared_ptr<const Variable> _variable, std::shared_ptr<const Expression> _expression);
+	explicit AssignmentStatement(std::shared_ptr<const Expression> _expression);
 	std::shared_ptr<const Variable> variable;
 	std::shared_ptr<const Expression> expression;
 };
