@@ -39,7 +39,6 @@ private:
     Scanner *scanner_;
     Logger *logger_;
     std::unique_ptr<const Token> token_;
-    std::string scope;
 
     const std::string ident();
 

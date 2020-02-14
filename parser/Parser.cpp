@@ -48,13 +48,9 @@ std::unique_ptr<const Module> Parser::module()
 			{
 				token_ = scanner_->nextToken();
 				auto _module = std::make_unique<Module>(identifier);
-				scope = identifier;
 				logger_->info("", identifier + " module is created.");
 
 				for (auto& declaration : declarations()) {
-
-					// Add declaration to symbol table
-
 					bool isDeclarationOk = true;
 					for (auto moduleDeclaration : _module->declarations)
 						if (declaration->identifier == moduleDeclaration->identifier) {
