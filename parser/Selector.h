@@ -4,16 +4,11 @@
 #include <map>
 
 #include "Expression.h"
-
-enum class SelectorType
-{
-	Array,
-	Record
-};
+#include "Type.h"
 
 class Selector {
 public:
-	SelectorType type;
+	PrimitiveType type;
 	std::map<int, std::shared_ptr<const Selector>> innerSelectors;
 };
 

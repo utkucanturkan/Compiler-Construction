@@ -271,7 +271,7 @@ const std::vector<std::shared_ptr<const VarVariable>> Parser::var_declarations()
 	while (shouldRepeat)
 	{
 		std::vector<std::string> identifier_list = ident_list();
-		if (identifier_list.size() == 0)
+		if (identifier_list.size() != 0)
 		{
 			if (token_->getType() == TokenType::colon)
 			{
@@ -305,7 +305,7 @@ const std::vector<std::shared_ptr<const VarVariable>> Parser::var_declarations()
 			}
 		}
 		else {
-			logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Identifier names are not valid or specified");
+			//logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Identifier names are not valid or specified");
 			shouldRepeat = false;
 		}
 	}
@@ -328,6 +328,7 @@ std::shared_ptr<const ProcedureVariable> Parser::procedure_declaration() {
 				procedure->declarations = body->declarations;
 				procedure->statements = body->statements;
 				symbolTable_.insert(head->identifier, procedure);
+				logger_->info("Procedure Declaration", "Name: " + head->identifier);
 				return procedure;
 			}
 			else {
@@ -501,12 +502,38 @@ std::shared_ptr<const Factor> Parser::factor() {
 		auto _variable = symbolTable_.lookup(identifier);
 		if (_variable != nullptr)
 		{
-			//if (_variable->nodeType_ == NodeType::typ)
-			//{
-
-			//}
-			selector();
-			return std::make_shared<const VariableFactor>(_variable);
+			Variable* _var;
+			if (_variable->nodeType_ == NodeType::variable_reference)
+			{
+				_var = static_cast<VarVariable*>(const_cast<Node*>(_variable.get()));
+			}
+			else if (_variable->nodeType_ == NodeType::constant_reference) {
+				_var = static_cast<ConstVariable*>(const_cast<Node*>(_variable.get()));
+			}
+			else {
+				logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Type variable can not be used as a factor");
+				return nullptr;
+			}
+			auto _selector = selector();
+			if (_selector != nullptr)
+			{
+				if (_variable->nodeType_ == NodeType::variable_reference)
+				{
+					if (_var->primitiveType == _selector->type)
+					{
+						_var->selector = _selector;
+					}
+					else {
+						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Selector type is not convenient with the variable type");
+						return nullptr;
+					}
+				}
+				else {
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Invalid selector");
+					return nullptr;
+				}
+			}
+			return std::make_shared<const VariableFactor>(std::shared_ptr<Variable>(_var));
 		}
 		else {
 			logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No variable with \"" + identifier + "\"");
@@ -598,7 +625,8 @@ std::shared_ptr<const Type> Parser::type() {
 			auto typeNode = symbolTable_.lookup(name);
 			if (typeNode != nullptr && typeNode->nodeType_ == NodeType::type_reference)
 			{
-				return typeNode;
+				auto _type = static_cast<Type*>(const_cast<Node*>(typeNode.get()));
+				return std::shared_ptr<Type>(_type);
 			}
 			else {
 				logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No defined type by identifier \"" + name + "\"");
@@ -623,7 +651,6 @@ std::shared_ptr<const ArrayType> Parser::array_type() {
 	auto _expression = expression();
 	if (_expression != nullptr)
 	{
-		// TODO: control from symbol table the expression is variablefactor and constant
 		if (_expression->type == PrimitiveType::Number)
 		{
 			if (token_->getType() == TokenType::kw_of)
@@ -765,7 +792,7 @@ const std::vector<std::string> Parser::ident_list() {
 		}
 		else {
 			shouldRepeat = false;
-			logger_->error(token_->getPosition(), "- SYNTAX ERROR; Identifier is not valid.");
+			//logger_->error(token_->getPosition(), "- SYNTAX ERROR; Identifier is not valid.");
 		}
 	}
 	return identList;
@@ -974,22 +1001,28 @@ std::shared_ptr<const Statement> Parser::statement() {
 			auto variable = symbolTable_.lookup(identifier);
 			if (variable != nullptr)
 			{
-				auto _selector = selector();
-				if (_selector != nullptr)
-				{
-					// Go to symbol table
-				}
-				// control identifier/selector
-
 				if (variable->nodeType_ == NodeType::constant_reference || variable->nodeType_ == NodeType::type_reference)
 				{
 					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Constant or Type declarations can not be changed");
 				}
 				else if (variable->nodeType_ == NodeType::variable_reference) {
+					auto _var = static_cast<VarVariable*>(const_cast<Node*>(variable.get()));
+					auto _selector = selector();
+					if (_selector != nullptr)
+					{
+						if (_var->primitiveType == _selector->type)
+						{
+							_var->selector = _selector;
+						}
+						else {
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Selector type is not convenient with the variable type");
+							return nullptr;
+						}
+					}
 					auto _assignment = assignment();
 					if (_assignment != nullptr)
 					{
-						if (variable->primitiveType == _assignment->expression->type) {
+						if (_var->primitiveType == _assignment->expression->type) {
 							return _assignment;
 						}
 						else {
@@ -1004,8 +1037,28 @@ std::shared_ptr<const Statement> Parser::statement() {
 					auto _procedureCall = procedure_call();
 					if (_procedureCall != nullptr)
 					{
-						// control procedure formal parameters types and numbers with actual parameters
-						return _procedureCall;
+						auto _procedure = static_cast<ProcedureVariable*>(const_cast<Node*>(variable.get()));
+						if (_procedureCall->actualParameters.size() == _procedure->parameters.size())
+						{
+							bool isParameterTypesOk = true;
+							for (int i = 0; i < _procedure->parameters.size(); i++) {
+								if (_procedureCall->actualParameters[i]->type != _procedure->parameters[i]->primitiveType)
+								{
+									isParameterTypesOk = false;
+									break;
+								}
+							}
+							if (isParameterTypesOk)
+							{
+								return _procedureCall;
+							}
+							else {
+								logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Actual parameters types are not equal corresponding formal parameter type");
+							}
+						}
+						else {
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Actual parameters number is not equal formal parameters number of procedure");
+						}
 					}
 					else {
 						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No valid procedure calling");
@@ -1013,8 +1066,8 @@ std::shared_ptr<const Statement> Parser::statement() {
 				}
 			}
 			else {
-				logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No valid statement");
-			}			
+				logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No valid identifier");
+			}
 		}
 	}
 	return nullptr;
@@ -1022,7 +1075,7 @@ std::shared_ptr<const Statement> Parser::statement() {
 
 std::shared_ptr<const AssignmentStatement> Parser::assignment() {
 	// ident selector ":=" expression
-	if (token_->getType() != TokenType::op_becomes)
+	if (token_->getType() == TokenType::op_becomes)
 	{
 		token_ = scanner_->nextToken();
 		auto _expression = expression();

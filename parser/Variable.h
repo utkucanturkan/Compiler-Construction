@@ -13,6 +13,6 @@ public:
 	explicit Variable(std::string _identifier, std::shared_ptr<const Type> _type);
 	std::string identifier;
 	std::shared_ptr<const Type> type;
-	std::vector<std::shared_ptr<const Selector>> selectors;
+	std::shared_ptr<const Selector> selector;
 	PrimitiveType primitiveType;
 };

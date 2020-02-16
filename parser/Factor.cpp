@@ -15,8 +15,8 @@ NumberFactor::NumberFactor(const int _value): Factor(PrimitiveType::Number), val
 
 StringFactor::StringFactor(const std::string _value): Factor(PrimitiveType::String), value(_value) { }
 
-NotFactor::NotFactor(std::shared_ptr<const Factor> _factor) : Factor(_factor.get()->type), factor(_factor) { }
+NotFactor::NotFactor(std::shared_ptr<const Factor> _factor) : Factor(_factor->type), factor(_factor) { }
 
-VariableFactor::VariableFactor(std::shared_ptr<const Variable> _variable) : Factor(_variable.get()->type->primitiveType), variable(_variable) { }
+VariableFactor::VariableFactor(std::shared_ptr<const Variable> _variable) : Factor(_variable->primitiveType), variable(_variable) { }
 
-ExpressionFactor::ExpressionFactor(std::shared_ptr<const Expression> _expression) : Factor(_expression.get()->type), expression(_expression) { }
+ExpressionFactor::ExpressionFactor(std::shared_ptr<const Expression> _expression) : Factor(_expression->type), expression(_expression) { }
