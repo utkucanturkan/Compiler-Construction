@@ -39,7 +39,7 @@ private:
     Scanner *scanner_;
     Logger *logger_;
     std::unique_ptr<const Token> token_;
-
+    SymbolTable symbolTable_;
     const std::string ident();
 
     std::unique_ptr<const Module> module();

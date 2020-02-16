@@ -14,8 +14,6 @@ public:
 	explicit SymbolTable();
 	~SymbolTable();
 
-	void beginBlock();
 	void insert(const std::string& name, std::shared_ptr<const Node> node);
-	const Node* lookup(const std::string& name) const;
-	void endBlock();
+	std::shared_ptr<const Node> lookup(const std::string& name) const;
 };

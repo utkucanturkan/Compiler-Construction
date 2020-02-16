@@ -6,8 +6,10 @@
 
 #include "Variable.h"
 #include "Statement.h"
+#include "ast/Node.h"
 
-class Module {
+
+class Module: public Node {
 public:
 	explicit Module(std::string _identifier);
 	std::string identifier;

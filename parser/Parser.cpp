@@ -18,6 +18,7 @@
 
 Parser::Parser(Scanner* scanner, Logger* logger) :
 	scanner_(scanner), logger_(logger) {
+	symbolTable_ = SymbolTable();
 }
 
 Parser::~Parser() = default;
@@ -49,7 +50,6 @@ std::unique_ptr<const Module> Parser::module()
 				token_ = scanner_->nextToken();
 				auto _module = std::make_unique<Module>(identifier);
 				logger_->info("", identifier + " module is created.");
-
 				for (auto& declaration : declarations()) {
 					bool isDeclarationOk = true;
 					for (auto moduleDeclaration : _module->declarations)
@@ -180,8 +180,8 @@ const std::vector<std::shared_ptr<const ConstVariable>> Parser::const_declaratio
 					{
 						auto constantVariable = std::make_shared<const ConstVariable>(identifier, _expression);
 						constantDeclarations.emplace_back(constantVariable);
+						symbolTable_.insert(identifier, constantVariable);
 						logger_->info("CONST Declaration", "Name: " + identifier);
-
 						token_ = scanner_->nextToken();
 						identifier = ident();
 						if (identifier.empty())
@@ -233,7 +233,7 @@ const std::vector<std::shared_ptr<const TypeVariable>> Parser::type_declarations
 						auto typeDeclaration = std::make_shared<const TypeVariable>(identifier, _type);
 						typeDeclarations.emplace_back(typeDeclaration);
 						logger_->info("TYPE Declaration", "Name: " + identifier);
-
+						symbolTable_.insert(identifier, typeDeclaration);
 						token_ = scanner_->nextToken();
 						identifier = ident();
 						if (identifier.empty())
@@ -277,13 +277,15 @@ const std::vector<std::shared_ptr<const VarVariable>> Parser::var_declarations()
 			{
 				token_ = scanner_->nextToken();
 				auto _type = type();
-				if (_type.get() != nullptr)
+				if (_type != nullptr)
 				{
 					if (token_->getType() == TokenType::semicolon)
 					{
 						for (auto const& identifier : identifier_list) {
 							auto varVariable = std::make_shared<const VarVariable>(identifier, _type);
 							varDeclarations.emplace_back(varVariable);
+							logger_->info("Var Declaration", "Name: " + identifier);
+							symbolTable_.insert(identifier, varVariable);
 						}
 						token_ = scanner_->nextToken();
 					}
@@ -325,6 +327,7 @@ std::shared_ptr<const ProcedureVariable> Parser::procedure_declaration() {
 				procedure->parameters = head->parameters;
 				procedure->declarations = body->declarations;
 				procedure->statements = body->statements;
+				symbolTable_.insert(head->identifier, procedure);
 				return procedure;
 			}
 			else {
@@ -494,12 +497,20 @@ std::shared_ptr<const Factor> Parser::factor() {
 	std::string identifier = ident();
 	if (!identifier.empty())
 	{
-		// control identifier is a variable that has been already specied.
-		// control identifier or its selector whether is in symbol table or not.
 		token_ = scanner_->nextToken();
-		auto _variable = std::make_shared<const Variable>(identifier);
-		selector();
-		return std::make_shared<const VariableFactor>(_variable);
+		auto _variable = symbolTable_.lookup(identifier);
+		if (_variable != nullptr)
+		{
+			//if (_variable->nodeType_ == NodeType::typ)
+			//{
+
+			//}
+			selector();
+			return std::make_shared<const VariableFactor>(_variable);
+		}
+		else {
+			logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No variable with \"" + identifier + "\"");
+		}
 	}
 	else {
 		if (token_->getType() == TokenType::const_string)
@@ -571,7 +582,6 @@ std::shared_ptr<const Type> Parser::type() {
 	std::string name = ident();
 	if (!name.empty())
 	{
-		// INTEGER - CHAR - BOOLEAN - LONGINT
 		token_ = scanner_->nextToken();
 		PrimitiveType primitiveType;
 		if (name == "INTEGER" || name == "LONGINT")
@@ -583,6 +593,17 @@ std::shared_ptr<const Type> Parser::type() {
 		}
 		else if (name == "BOOLEAN") {
 			primitiveType = PrimitiveType::Boolean;
+		}
+		else {
+			auto typeNode = symbolTable_.lookup(name);
+			if (typeNode != nullptr && typeNode->nodeType_ == NodeType::type_reference)
+			{
+				return typeNode;
+			}
+			else {
+				logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No defined type by identifier \"" + name + "\"");
+				return nullptr;
+			}
 		}
 		return std::make_shared<Type>(primitiveType);
 	}
@@ -602,7 +623,7 @@ std::shared_ptr<const ArrayType> Parser::array_type() {
 	auto _expression = expression();
 	if (_expression != nullptr)
 	{
-		// TODO: control from sysbol table id the expression is variablefactor and constant
+		// TODO: control from symbol table the expression is variablefactor and constant
 		if (_expression->type == PrimitiveType::Number)
 		{
 			if (token_->getType() == TokenType::kw_of)
@@ -673,6 +694,7 @@ std::shared_ptr<const RecordType> Parser::record_type() {
 		if (token_->getType() == TokenType::kw_end)
 		{
 			token_ = scanner_->nextToken();
+			return record;
 		}
 		else {
 			logger_->error(token_->getPosition(), "- SYNTAX ERROR; \"END\" keyword is missing.");
@@ -949,24 +971,50 @@ std::shared_ptr<const Statement> Parser::statement() {
 		if (!identifier.empty())
 		{
 			token_ = scanner_->nextToken();
-			
-			// 1- Go to symbol table
-			auto _selector = selector();
-			if (_selector != nullptr)
+			auto variable = symbolTable_.lookup(identifier);
+			if (variable != nullptr)
 			{
-				// Go to symbol table
+				auto _selector = selector();
+				if (_selector != nullptr)
+				{
+					// Go to symbol table
+				}
+				// control identifier/selector
+
+				if (variable->nodeType_ == NodeType::constant_reference || variable->nodeType_ == NodeType::type_reference)
+				{
+					logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Constant or Type declarations can not be changed");
+				}
+				else if (variable->nodeType_ == NodeType::variable_reference) {
+					auto _assignment = assignment();
+					if (_assignment != nullptr)
+					{
+						if (variable->primitiveType == _assignment->expression->type) {
+							return _assignment;
+						}
+						else {
+							logger_->error(token_->getPosition(), "- SEMANTIC ERROR; Variable and expression type do not match");
+						}
+					}
+					else {
+						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No valid assignment");
+					}
+				}
+				else if (variable->nodeType_ == NodeType::procedure) {
+					auto _procedureCall = procedure_call();
+					if (_procedureCall != nullptr)
+					{
+						// control procedure formal parameters types and numbers with actual parameters
+						return _procedureCall;
+					}
+					else {
+						logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No valid procedure calling");
+					}
+				}
 			}
-
-			// 2- If the symbol is a variable go to assignment method
-			auto assignmentStatement = assignment();
-			// 2-1- control identifier/selector type and expression type
-			// 2-2- return assignmentStatement
-			
-
-			// 3- else if symbol is a procedure call go to its method
-			auto procedureCall = procedure_call();
-			// 3-1- control identifier/selector is an existed procedure
-			// 3-2- return procedureCall
+			else {
+				logger_->error(token_->getPosition(), "- SEMANTIC ERROR; No valid statement");
+			}			
 		}
 	}
 	return nullptr;

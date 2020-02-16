@@ -35,18 +35,19 @@ enum class NodeType : char {
 class Node {
 
 private:
-	NodeType nodeType_;
-	FilePos pos_;
+	//FilePos pos_;
 
 public:
-	explicit Node(NodeType nodeType, FilePos pos);
-	virtual ~Node() = 0;
+	NodeType nodeType_;
 
-	const NodeType getNodeType() const;
-	const FilePos getFilePos() const;
+	explicit Node(NodeType nodeType);
+	//virtual ~Node() = 0;
 
-	virtual void print(std::ostream& stream) const = 0;
-	friend std::ostream& operator<<(std::ostream& stream, const Node& node);
+	//const NodeType getNodeType() const;
+	//const FilePos getFilePos() const;
+
+	//virtual void print(std::ostream& stream) const = 0;
+	//friend std::ostream& operator<<(std::ostream& stream, const Node& node);
 };
 
 #endif //OBERON0C_AST_H
